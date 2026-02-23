@@ -1,0 +1,182 @@
+
+import React, { useRef } from 'react';
+import { Page } from '../types';
+import { LayoutDashboard, Database, FileText, FileUp, FileDown, LogOut, Settings, ListPlus } from 'lucide-react';
+
+interface SidebarProps {
+  currentPage: Page;
+  setCurrentPage: (page: Page) => void;
+  onLogout: () => void;
+  onRestoreSuccess: () => void;
+  showModal: (title: string, content: React.ReactNode) => void;
+  hideModal: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout, onRestoreSuccess, showModal, hideModal }) => {
+  const backupFileInputRef = useRef<HTMLInputElement>(null);
+
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'master', label: 'Master', icon: Database },
+    { id: 'transaksi', label: 'Transaksi', icon: ListPlus },
+    { id: 'laporan', label: 'Laporan', icon: FileText },
+    { id: 'settings', label: 'Pengaturan', icon: Settings },
+  ];
+
+  const handleBackup = () => {
+    const data: { [key: string]: any } = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key !== 'isLoggedIn') {
+            try {
+              data[key] = JSON.parse(localStorage.getItem(key)!);
+            } catch (e) {
+              console.warn(`Tidak dapat mengurai item localStorage ${key}, melewati backup.`);
+            }
+        }
+    }
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `backup-disiplin-siswa-${new Date().toISOString().slice(0,10)}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+  
+  const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    const uploader = event.target;
+
+    if (!file) {
+      if(uploader) uploader.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+
+    const showError = (message: string) => {
+      showModal("Error Restore", <p className="text-red-600">{message}</p>);
+    };
+
+    reader.onerror = () => {
+      showError("Gagal membaca file. File mungkin rusak atau Anda tidak memiliki izin untuk membacanya.");
+      if(uploader) uploader.value = '';
+    };
+
+    reader.onload = (e) => {
+        try {
+            const text = e.target?.result;
+            if (typeof text !== 'string' || text.trim() === '') {
+                showError("File backup kosong atau tidak dapat dibaca.");
+                return;
+            }
+
+            const data = JSON.parse(text);
+
+            if (typeof data !== 'object' || data === null || !data.students || !Array.isArray(data.students)) {
+                showError("Konten file backup tidak valid. Pastikan Anda menggunakan file backup yang benar dari aplikasi ini.");
+                return;
+            }
+
+            const performRestore = () => {
+                const appKeys = ['students', 'transactions', 'violations', 'consequences', 'followups', 'homeroomTeachers', 'counselors', 'credentials'];
+                
+                appKeys.forEach(key => localStorage.removeItem(key));
+                
+                appKeys.forEach(key => {
+                    if (data.hasOwnProperty(key)) {
+                        localStorage.setItem(key, JSON.stringify(data[key]));
+                    }
+                });
+
+                const studentData = localStorage.getItem('students');
+                if (!studentData || JSON.parse(studentData).length === 0) {
+                    hideModal();
+                    setTimeout(() => showError("Kesalahan Kritis: Data gagal disimpan setelah restore atau data yang dipulihkan kosong."), 10);
+                } else {
+                    hideModal();
+                    setTimeout(() => {
+                      showModal("Sukses", <div className="flex flex-col items-center text-center"><p className="mb-4">Restore berhasil. Antarmuka akan diperbarui.</p><button onClick={hideModal} className="px-4 py-2 bg-brand-primary text-white rounded-md hover:bg-brand-dark">OK</button></div>);
+                      onRestoreSuccess();
+                    }, 100); 
+                }
+            };
+            
+            const summaryContent = (
+              <div>
+                <p className="mb-4">File backup terdeteksi berisi:</p>
+                <ul className="list-disc list-inside mb-6 space-y-1 bg-gray-50 p-3 rounded-md">
+                  <li>{data.students?.length || 0} Siswa</li>
+                  <li>{data.transactions?.length || 0} Transaksi</li>
+                  <li>{data.violations?.length || 0} Jenis Pelanggaran</li>
+                </ul>
+                <p className="font-semibold text-yellow-800 bg-yellow-100 p-3 rounded-md">Anda yakin ingin melanjutkan? Semua data saat ini akan diganti.</p>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button onClick={hideModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                  <button onClick={performRestore} className="px-4 py-2 bg-brand-primary text-white rounded-md hover:bg-brand-dark">Lanjutkan</button>
+                </div>
+              </div>
+            );
+
+            showModal("Konfirmasi Restore Data", summaryContent);
+
+        } catch (jsonError) {
+            showError("Gagal memproses file. File backup tampaknya bukan file JSON yang valid.");
+        } finally {
+            if (uploader) {
+                uploader.value = '';
+            }
+        }
+    };
+
+    reader.readAsText(file);
+  };
+
+  return (
+    <aside className="w-64 bg-brand-primary text-white flex flex-col transition-all duration-300">
+      <div className="flex items-center justify-center p-4 border-b border-brand-dark">
+        <img src="https://iili.io/KDFk4fI.png" alt="Logo" className="h-12 w-12 mr-3" />
+        <span className="text-xl font-bold">Manajemen Disiplin</span>
+      </div>
+      <nav className="flex-1 px-4 py-4 space-y-2">
+        {navItems.map((item) => (
+          <a
+            key={item.id}
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setCurrentPage(item.id as Page);
+            }}
+            className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${
+              currentPage === item.id ? 'bg-brand-dark' : 'hover:bg-brand-secondary'
+            }`}
+          >
+            <item.icon className="w-5 h-5 mr-3" />
+            <span>{item.label}</span>
+          </a>
+        ))}
+      </nav>
+      <div className="px-4 py-4 border-t border-brand-dark space-y-2">
+        <button onClick={handleBackup} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+            <FileDown className="w-5 h-5 mr-3" />
+            <span>Backup Data</span>
+        </button>
+        <button onClick={() => backupFileInputRef.current?.click()} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+            <FileUp className="w-5 h-5 mr-3" />
+            <span>Restore Data</span>
+        </button>
+        <input type="file" ref={backupFileInputRef} onChange={handleRestore} className="hidden" accept=".json" />
+
+        <button onClick={onLogout} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+          <LogOut className="w-5 h-5 mr-3" />
+          <span>Logout</span>
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;

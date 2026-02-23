@@ -1,0 +1,5 @@
+{
+  "name": "Sistem Manajemen Disiplin Siswa",
+  "description": "Aplikasi web interaktif untuk mengelola dan memantau disiplin negatif siswa di sekolah. Termasuk pencatatan pelanggaran, manajemen data master, dan pelaporan.",
+  "requestFramePermissions": []
+}
