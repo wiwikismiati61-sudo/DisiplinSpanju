@@ -1,7 +1,7 @@
 
 import React, { useRef } from 'react';
 import { Page } from '../types';
-import { LayoutDashboard, Database, FileText, FileUp, FileDown, LogOut, Settings, ListPlus } from 'lucide-react';
+import { LayoutDashboard, Database, FileText, FileUp, FileDown, LogOut, Settings, ListPlus, X } from 'lucide-react';
 
 interface SidebarProps {
   currentPage: Page;
@@ -10,9 +10,11 @@ interface SidebarProps {
   onRestoreSuccess: () => void;
   showModal: (title: string, content: React.ReactNode) => void;
   hideModal: () => void;
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout, onRestoreSuccess, showModal, hideModal }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout, onRestoreSuccess, showModal, hideModal, isOpen, setIsOpen }) => {
   const backupFileInputRef = useRef<HTMLInputElement>(null);
 
   const navItems = [
@@ -136,46 +138,57 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
   };
 
   return (
-    <aside className="w-64 bg-brand-primary text-white flex flex-col transition-all duration-300">
-      <div className="flex items-center justify-center p-4 border-b border-brand-dark">
-        <img src="https://iili.io/KDFk4fI.png" alt="Logo" className="h-12 w-12 mr-3" />
-        <span className="text-xl font-bold">Manajemen Disiplin</span>
-      </div>
-      <nav className="flex-1 px-4 py-4 space-y-2">
-        {navItems.map((item) => (
-          <a
-            key={item.id}
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              setCurrentPage(item.id as Page);
-            }}
-            className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${
-              currentPage === item.id ? 'bg-brand-dark' : 'hover:bg-brand-secondary'
-            }`}
-          >
-            <item.icon className="w-5 h-5 mr-3" />
-            <span>{item.label}</span>
-          </a>
-        ))}
-      </nav>
-      <div className="px-4 py-4 border-t border-brand-dark space-y-2">
-        <button onClick={handleBackup} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
-            <FileDown className="w-5 h-5 mr-3" />
-            <span>Backup Data</span>
-        </button>
-        <button onClick={() => backupFileInputRef.current?.click()} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
-            <FileUp className="w-5 h-5 mr-3" />
-            <span>Restore Data</span>
-        </button>
-        <input type="file" ref={backupFileInputRef} onChange={handleRestore} className="hidden" accept=".json" />
+    <>
+      {/* Overlay */}
+      <div 
+        className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsOpen(false)}
+      ></div>
 
-        <button onClick={onLogout} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
-          <LogOut className="w-5 h-5 mr-3" />
-          <span>Logout</span>
-        </button>
-      </div>
-    </aside>
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-brand-primary text-white flex flex-col z-40 transform transition-transform duration-300 md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-center justify-between p-4 border-b border-brand-dark">
+          <div className="flex items-center">
+            <img src="https://iili.io/KDFk4fI.png" alt="Logo" className="h-12 w-12 mr-3" />
+            <span className="text-xl font-bold">Manajemen Disiplin</span>
+          </div>
+          <button onClick={() => setIsOpen(false)} className="md:hidden p-1 rounded-md hover:bg-brand-secondary">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        <nav className="flex-1 px-4 py-4 space-y-2">
+          {navItems.map((item) => (
+            <a
+              key={item.id}
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setCurrentPage(item.id as Page);
+                setIsOpen(false); // Close sidebar on mobile after navigation
+              }}
+              className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${currentPage === item.id ? 'bg-brand-dark' : 'hover:bg-brand-secondary'}`}>
+              <item.icon className="w-5 h-5 mr-3" />
+              <span>{item.label}</span>
+            </a>
+          ))}
+        </nav>
+        <div className="px-4 py-4 border-t border-brand-dark space-y-2">
+          <button onClick={handleBackup} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+              <FileDown className="w-5 h-5 mr-3" />
+              <span>Backup Data</span>
+          </button>
+          <button onClick={() => backupFileInputRef.current?.click()} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+              <FileUp className="w-5 h-5 mr-3" />
+              <span>Restore Data</span>
+          </button>
+          <input type="file" ref={backupFileInputRef} onChange={handleRestore} className="hidden" accept=".json" />
+
+          <button onClick={onLogout} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+            <LogOut className="w-5 h-5 mr-3" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+    </>
   );
 };
 

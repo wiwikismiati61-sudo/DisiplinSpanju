@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Menu } from 'lucide-react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import MasterData from './components/MasterData';
@@ -15,6 +16,8 @@ const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useLocalStorage<boolean>('isLoggedIn', false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [appKey, setAppKey] = useState(0);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -64,7 +67,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
+    <div className="relative min-h-screen md:flex bg-gray-100 font-sans">
       <Sidebar 
         currentPage={currentPage} 
         setCurrentPage={setCurrentPage} 
@@ -72,8 +75,16 @@ const App: React.FC = () => {
         onRestoreSuccess={forceReRender}
         showModal={showModal}
         hideModal={hideModal}
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
       />
       <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="md:hidden flex justify-between items-center mb-4">
+            <span className="text-xl font-bold text-brand-primary">Manajemen Disiplin</span>
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-md bg-gray-200 text-gray-800">
+                <Menu className="h-6 w-6" />
+            </button>
+        </div>
         {renderPage()}
       </main>
       <Modal isOpen={modal.isOpen} onClose={hideModal} title={modal.title}>
