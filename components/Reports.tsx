@@ -3,9 +3,13 @@ import React, { useMemo, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Transaction, Student, Violation, FollowUp, Consequence } from '../types';
 import { exportToExcel } from '../utils/excel';
-import { Download, ChevronRight, ChevronDown, Filter } from 'lucide-react';
+import { Download, ChevronRight, ChevronDown, Filter, Eye } from 'lucide-react';
 
-const Reports: React.FC = () => {
+interface ReportsProps {
+    showModal: (title: string, content: React.ReactNode) => void;
+}
+
+const Reports: React.FC<ReportsProps> = ({ showModal }) => {
     const [transactions] = useLocalStorage<Transaction[]>('transactions', []);
     const [students] = useLocalStorage<Student[]>('students', []);
     const [violations] = useLocalStorage<Violation[]>('violations', []);
@@ -117,7 +121,17 @@ const Reports: React.FC = () => {
     }, [transactions]);
     
     const handleDownloadAllViolations = () => {
-        const dataToExport = transactions.map(t => {
+        const dataToExport = getAllViolationsData();
+        exportToExcel(dataToExport, 'Laporan_Siswa_Melanggar');
+    };
+
+    const handlePreviewAllViolations = () => {
+        const data = getAllViolationsData();
+        showPreviewModal("Preview: Laporan Siswa yang Melanggar", data);
+    };
+
+    const getAllViolationsData = () => {
+        return transactions.map(t => {
             const student = students.find(s => s.id === t.studentId);
             const violation = violations.find(v => v.id === t.violationId);
             const followUp = followUps.find(f => f.id === t.followUpId);
@@ -149,11 +163,20 @@ const Reports: React.FC = () => {
                 'Tindak Lanjut': followUp?.description || 'N/A'
             };
         });
-        exportToExcel(dataToExport, 'Laporan_Siswa_Melanggar');
     };
     
     const handleDownloadFollowUp = () => {
-        const dataToExport = transactions.map(t => {
+        const dataToExport = getFollowUpData();
+        exportToExcel(dataToExport, 'Laporan_Tindak_Lanjut');
+    };
+
+    const handlePreviewFollowUp = () => {
+        const data = getFollowUpData();
+        showPreviewModal("Preview: Laporan Keterangan Tindak Lanjut", data);
+    };
+
+    const getFollowUpData = () => {
+        return transactions.map(t => {
             const student = students.find(s => s.id === t.studentId);
             const violation = violations.find(v => v.id === t.violationId);
             const followUp = followUps.find(f => f.id === t.followUpId);
@@ -165,11 +188,20 @@ const Reports: React.FC = () => {
                 'Keterangan Tindak Lanjut': followUp?.description || 'N/A',
             };
         });
-        exportToExcel(dataToExport, 'Laporan_Tindak_Lanjut');
     };
 
     const handleDownloadSpecialAttention = () => {
-        const specialAttentionStudents = Object.keys(studentViolationCounts)
+        const specialAttentionStudents = getSpecialAttentionData();
+        exportToExcel(specialAttentionStudents, 'Laporan_Siswa_Perhatian_Khusus');
+    };
+
+    const handlePreviewSpecialAttention = () => {
+        const data = getSpecialAttentionData();
+        showPreviewModal("Preview: Siswa yang Perlu Perhatian Khusus", data);
+    };
+
+    const getSpecialAttentionData = () => {
+        return Object.keys(studentViolationCounts)
             .filter((studentId) => studentViolationCounts[studentId] >= 3)
             .map((studentId) => {
                 const student = students.find(s => s.id === studentId);
@@ -180,18 +212,52 @@ const Reports: React.FC = () => {
                     'Status': 'Perlu Panggilan Orang Tua'
                 };
             });
-        exportToExcel(specialAttentionStudents, 'Laporan_Siswa_Perhatian_Khusus');
     };
 
-    const ReportCard = ({ title, description, onDownload }: { title: string, description: string, onDownload: () => void }) => (
+    const showPreviewModal = (title: string, data: any[]) => {
+        if (data.length === 0) {
+            showModal(title, <div className="p-4 text-center text-gray-500">Tidak ada data untuk ditampilkan.</div>);
+            return;
+        }
+
+        const headers = Object.keys(data[0]);
+
+        const content = (
+            <div className="overflow-x-auto max-h-[70vh]">
+                <table className="w-full text-left border-collapse min-w-max">
+                    <thead className="bg-gray-100 sticky top-0 z-10">
+                        <tr>
+                            {headers.map(h => <th key={h} className="p-3 border-b font-semibold text-gray-700">{h}</th>)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.map((row, idx) => (
+                            <tr key={idx} className="border-b hover:bg-gray-50">
+                                {headers.map(h => <td key={h} className="p-3 text-gray-800">{row[h]}</td>)}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+
+        showModal(title, content);
+    };
+
+    const ReportCard = ({ title, description, onDownload, onPreview }: { title: string, description: string, onDownload: () => void, onPreview: () => void }) => (
         <div className="bg-gray-50 p-6 rounded-lg border flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
             <div>
                 <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
                 <p className="text-gray-600 mt-1 max-w-lg">{description}</p>
             </div>
-            <button onClick={onDownload} className="flex items-center bg-brand-secondary text-white px-4 py-2 rounded-lg hover:bg-brand-primary transition whitespace-nowrap">
-                <Download size={18} className="mr-2"/> Download Excel
-            </button>
+            <div className="flex items-center space-x-2 w-full md:w-auto">
+                <button onClick={onPreview} className="flex-1 md:flex-none flex justify-center items-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition whitespace-nowrap">
+                    <Eye size={18} className="mr-2"/> Lihat
+                </button>
+                <button onClick={onDownload} className="flex-1 md:flex-none flex justify-center items-center bg-brand-secondary text-white px-4 py-2 rounded-lg hover:bg-brand-primary transition whitespace-nowrap">
+                    <Download size={18} className="mr-2"/> Download Excel
+                </button>
+            </div>
         </div>
     );
 
@@ -347,16 +413,19 @@ const Reports: React.FC = () => {
                     title="Laporan Siswa yang Melanggar"
                     description="Laporan lengkap berisi semua catatan pelanggaran siswa yang telah terjadi."
                     onDownload={handleDownloadAllViolations}
+                    onPreview={handlePreviewAllViolations}
                 />
                 <ReportCard 
                     title="Laporan Keterangan Tindak Lanjut"
                     description="Laporan yang berfokus pada tindak lanjut yang diberikan untuk setiap pelanggaran."
                     onDownload={handleDownloadFollowUp}
+                    onPreview={handlePreviewFollowUp}
                 />
                 <ReportCard 
                     title="Siswa yang Perlu Perhatian Khusus"
                     description="Daftar siswa yang telah melakukan 3 kali pelanggaran atau lebih dan memerlukan panggilan orang tua."
                     onDownload={handleDownloadSpecialAttention}
+                    onPreview={handlePreviewSpecialAttention}
                 />
             </div>
         </div>

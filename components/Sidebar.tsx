@@ -78,32 +78,34 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
 
             const data = JSON.parse(text);
 
-            if (typeof data !== 'object' || data === null || !data.students || !Array.isArray(data.students)) {
+            if (typeof data !== 'object' || data === null) {
                 showError("Konten file backup tidak valid. Pastikan Anda menggunakan file backup yang benar dari aplikasi ini.");
                 return;
             }
 
             const performRestore = () => {
-                const appKeys = ['students', 'transactions', 'violations', 'consequences', 'followups', 'homeroomTeachers', 'counselors', 'credentials'];
-                
-                appKeys.forEach(key => localStorage.removeItem(key));
-                
-                appKeys.forEach(key => {
-                    if (data.hasOwnProperty(key)) {
-                        localStorage.setItem(key, JSON.stringify(data[key]));
-                    }
-                });
+                try {
+                    const appKeys = ['students', 'transactions', 'violations', 'consequences', 'followups', 'homeroomTeachers', 'counselors', 'credentials'];
+                    
+                    appKeys.forEach(key => localStorage.removeItem(key));
+                    
+                    appKeys.forEach(key => {
+                        if (data.hasOwnProperty(key)) {
+                            localStorage.setItem(key, JSON.stringify(data[key]));
+                        } else {
+                            // Set empty array as default for missing keys to prevent issues
+                            localStorage.setItem(key, JSON.stringify([]));
+                        }
+                    });
 
-                const studentData = localStorage.getItem('students');
-                if (!studentData || JSON.parse(studentData).length === 0) {
-                    hideModal();
-                    setTimeout(() => showError("Kesalahan Kritis: Data gagal disimpan setelah restore atau data yang dipulihkan kosong."), 10);
-                } else {
                     hideModal();
                     setTimeout(() => {
                       showModal("Sukses", <div className="flex flex-col items-center text-center"><p className="mb-4">Restore berhasil. Antarmuka akan diperbarui.</p><button onClick={hideModal} className="px-4 py-2 bg-brand-primary text-white rounded-md hover:bg-brand-dark">OK</button></div>);
                       onRestoreSuccess();
                     }, 100); 
+                } catch (err) {
+                    hideModal();
+                    setTimeout(() => showError("Kesalahan Kritis: Gagal menyimpan data saat restore."), 10);
                 }
             };
             

@@ -52,17 +52,17 @@ const App: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard key={appKey} />;
+        return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
       case 'master':
         return <MasterData key={appKey} />;
       case 'transaksi':
         return <Transactions key={appKey} />;
       case 'laporan':
-        return <Reports key={appKey} />;
+        return <Reports key={appKey} showModal={showModal} />;
        case 'settings':
         return <Settings key={appKey} />;
       default:
-        return <Dashboard key={appKey} />;
+        return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
     }
   };
 

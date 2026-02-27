@@ -127,6 +127,7 @@ const MasterData: React.FC = () => {
     
     const CrudComponent = <T extends {id: string, [key: string]: any}>({ title, data, setData, formFields }: { title: string, data: T[], setData: React.Dispatch<React.SetStateAction<T[]>>, formFields: { name: string, label: string, type: string, options?: string[] }[] }) => {
         const [formState, setFormState] = useState<Partial<T>>({});
+        const fileInputRef = useRef<HTMLInputElement>(null);
         
         useEffect(() => {
             if (editingItemId) {
@@ -142,7 +143,7 @@ const MasterData: React.FC = () => {
         const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
             const { name, value, type } = e.target;
             const isNumber = type === 'number';
-            setFormState(prev => ({ ...prev, [name]: isNumber ? parseInt(value) || '' : value }));
+            setFormState(prev => ({ ...prev, [name]: isNumber ? (value === '' ? '' : parseInt(value)) : value }));
         };
 
         const handleSubmit = () => {
@@ -170,35 +171,89 @@ const MasterData: React.FC = () => {
             }
         };
 
+        const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const XLSX = await import('xlsx');
+                    const dataBuffer = event.target?.result;
+                    const workbook = XLSX.read(dataBuffer, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json<any>(worksheet);
+
+                    const newItems: T[] = [];
+                    json.forEach((row, index) => {
+                        const newItem: any = { id: `item-${Date.now()}-${index}` };
+                        let isValid = true;
+                        
+                        formFields.forEach(f => {
+                            const key = Object.keys(row).find(k => k.trim().toUpperCase() === f.label.toUpperCase());
+                            if (key && row[key] !== undefined && row[key] !== null) {
+                                newItem[f.name] = f.type === 'number' ? Number(row[key]) : String(row[key]);
+                            } else {
+                                isValid = false;
+                            }
+                        });
+
+                        if (isValid) {
+                            newItems.push(newItem as T);
+                        }
+                    });
+
+                    if (newItems.length === 0) {
+                        throw new Error(`Tidak ada data valid. Pastikan file Excel memiliki kolom: ${formFields.map(f => f.label).join(', ')}`);
+                    }
+
+                    setData(prev => [...prev, ...newItems]);
+                    alert(`${newItems.length} data berhasil di-upload.`);
+                } catch (error: any) {
+                    console.error(error);
+                    alert(`Gagal upload: ${error.message}`);
+                } finally {
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
         return (
             <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-gray-700">{editingItemId ? `Edit ${title}` : title}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg">
-                    {formFields.map(f => (
-                        <div key={f.name}>
-                            <label className="block text-sm font-medium text-gray-700">{f.label}</label>
-                            {f.type === 'select' ? (
-                                <select name={f.name} value={(formState[f.name] as string) || ''} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
-                                    <option value="">Pilih...</option>
-                                    {f.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                </select>
-                            ) : (
-                                <input type={f.type} name={f.name} value={(formState[f.name] as any) || ''} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"/>
-                            )}
-                        </div>
-                    ))}
-                    <div className="flex items-center justify-end space-x-2 lg:col-start-4">
-                        {editingItemId && (
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-semibold text-gray-700">{editingItemId ? `Edit ${title}` : title}</h3>
+                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                        <UploadCloud size={18} className="mr-2" /> Upload dari Excel
+                    </button>
+                    <input type="file" ref={fileInputRef} onChange={handleExcelUpload} className="hidden" accept=".xlsx, .xls" />
+                </div>
+                {editingItemId && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg">
+                        {formFields.map(f => (
+                            <div key={f.name}>
+                                <label className="block text-sm font-medium text-gray-700">{f.label}</label>
+                                {f.type === 'select' ? (
+                                    <select name={f.name} value={(formState[f.name] as string) || ''} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
+                                        <option value="">Pilih...</option>
+                                        {f.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                ) : (
+                                    <input type={f.type} name={f.name} value={(formState[f.name] as any) || ''} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"/>
+                                )}
+                            </div>
+                        ))}
+                        <div className="flex items-center justify-end space-x-2 lg:col-start-4">
                             <button onClick={handleCancelEdit} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition h-10">
                                 Batal
                             </button>
-                        )}
-                        <button onClick={handleSubmit} className="flex justify-center items-center bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-dark transition h-10">
-                            {editingItemId ? <Save size={18} className="mr-2" /> : <Plus size={18} className="mr-2" />}
-                            {editingItemId ? 'Update' : 'Tambah'}
-                        </button>
+                            <button onClick={handleSubmit} className="flex justify-center items-center bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-dark transition h-10">
+                                <Save size={18} className="mr-2" /> Update
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
                  <div className="overflow-auto max-h-[60vh] rounded-lg border">
                     <table className="w-full text-left">
                         <thead className="bg-gray-100 sticky top-0"><tr>{formFields.map(f => <th key={f.name} className="p-3">{f.label}</th>)}<th className="p-3">Aksi</th></tr></thead>

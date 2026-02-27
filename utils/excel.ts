@@ -8,25 +8,30 @@ export const parseStudentsFromExcel = (file: File): Promise<Student[]> => {
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json<any>(worksheet);
         
-        const students: Student[] = json.map((row, index) => {
+        const students: Student[] = [];
+        json.forEach((row, index) => {
           // Menemukan kunci secara case-insensitive dan memangkas spasi dari kunci
           const nameKey = Object.keys(row).find(key => key.trim().toUpperCase() === 'NAMA SISWA');
           const classKey = Object.keys(row).find(key => key.trim().toUpperCase() === 'KELAS');
 
-          if (!nameKey || !row[nameKey] || !classKey || !row[classKey]) {
-            throw new Error(`Baris ${index + 2} tidak memiliki kolom 'Nama Siswa' atau 'Kelas' yang valid.`);
+          if (nameKey && row[nameKey] && classKey && row[classKey]) {
+            students.push({
+              id: `student-${Date.now()}-${index}`,
+              name: String(row[nameKey]),
+              class: String(row[classKey]),
+            });
           }
-          return {
-            id: `student-${Date.now()}-${index}`,
-            name: String(row[nameKey]),
-            class: String(row[classKey]),
-          };
         });
+
+        if (students.length === 0) {
+            throw new Error("Tidak ada data valid ditemukan. Pastikan ada kolom 'Nama Siswa' dan 'Kelas'.");
+        }
+        
         resolve(students);
       } catch (error) {
         reject(error);
@@ -43,21 +48,26 @@ export const parseNameListFromExcel = (file: File, idPrefix: string): Promise<{i
         reader.onload = (e) => {
             try {
                 const data = e.target?.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
+                const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
-                const nameList = json.map((row, index) => {
+                const nameList: {id: string, name: string}[] = [];
+                json.forEach((row, index) => {
                     const nameKey = Object.keys(row).find(key => key.trim().toUpperCase() === 'NAMA');
-                    if (!nameKey || !row[nameKey]) {
-                        throw new Error(`Baris ${index + 2} tidak memiliki kolom 'Nama' yang valid.`);
+                    if (nameKey && row[nameKey]) {
+                        nameList.push({
+                            id: `${idPrefix}-${Date.now()}-${index}`,
+                            name: String(row[nameKey]),
+                        });
                     }
-                    return {
-                        id: `${idPrefix}-${Date.now()}-${index}`,
-                        name: String(row[nameKey]),
-                    };
                 });
+
+                if (nameList.length === 0) {
+                    throw new Error("Tidak ada data valid ditemukan. Pastikan ada kolom 'Nama'.");
+                }
+
                 resolve(nameList);
             } catch (error) {
                 reject(error);

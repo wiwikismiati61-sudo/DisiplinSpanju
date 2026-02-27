@@ -1,13 +1,18 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Transaction, Student, Violation } from '../types';
-import { User, Users, PieChart as PieChartIcon, AlertTriangle } from 'lucide-react';
+import { User, Users, PieChart as PieChartIcon, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 
-const Dashboard: React.FC = () => {
-    const [transactions] = useLocalStorage<Transaction[]>('transactions', []);
-    const [students] = useLocalStorage<Student[]>('students', []);
+interface DashboardProps {
+    showModal: (title: string, content: React.ReactNode) => void;
+    hideModal: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ showModal, hideModal }) => {
+    const [transactions, setTransactions] = useLocalStorage<Transaction[]>('transactions', []);
+    const [students, setStudents] = useLocalStorage<Student[]>('students', []);
     const [violations] = useLocalStorage<Violation[]>('violations', []);
 
     const totalStudents = students.length;
@@ -60,6 +65,75 @@ const Dashboard: React.FC = () => {
 
     const COLORS = ['#4CAF50', '#FFC107', '#F44336'];
     const CLASS_BAR_COLOR = '#1976D2';
+
+    const handleEditStudent = (studentId: string) => {
+        const student = students.find(s => s.id === studentId);
+        if (!student) return;
+
+        const EditStudentForm = () => {
+            const [name, setName] = useState(student.name);
+            const [className, setClassName] = useState(student.class);
+
+            const handleSave = () => {
+                setStudents(prev => prev.map(s => s.id === studentId ? { ...s, name, class: className } : s));
+                hideModal();
+            };
+
+            return (
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Nama Siswa</label>
+                        <input 
+                            type="text" 
+                            value={name} 
+                            onChange={(e) => setName(e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 border"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Kelas</label>
+                        <input 
+                            type="text" 
+                            value={className} 
+                            onChange={(e) => setClassName(e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 border"
+                        />
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-4">
+                        <button onClick={hideModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                        <button 
+                            onClick={handleSave} 
+                            className="px-4 py-2 bg-brand-primary text-white rounded-md hover:bg-brand-dark"
+                        >
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        showModal("Edit Siswa", <EditStudentForm />);
+    };
+
+    const handleDeleteStudent = (studentId: string) => {
+        const confirmDelete = () => {
+            setStudents(prev => prev.filter(s => s.id !== studentId));
+            setTransactions(prev => prev.filter(t => t.studentId !== studentId));
+            hideModal();
+        };
+
+        const content = (
+            <div className="space-y-4">
+                <p className="text-gray-700">Apakah Anda yakin ingin menghapus siswa ini beserta seluruh data pelanggarannya?</p>
+                <div className="flex justify-end space-x-2 pt-4">
+                    <button onClick={hideModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
+                    <button onClick={confirmDelete} className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Hapus</button>
+                </div>
+            </div>
+        );
+
+        showModal("Konfirmasi Hapus", content);
+    };
 
     const StatCard = ({ title, value, icon: Icon, color }: { title: string, value: string | number, icon: React.ElementType, color: string }) => (
         <div className="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
@@ -142,6 +216,7 @@ const Dashboard: React.FC = () => {
                                 <th className="p-3 font-medium text-gray-600">Kelas</th>
                                 <th className="p-3 font-medium text-gray-600">Jumlah Pelanggaran</th>
                                 <th className="p-3 font-medium text-gray-600">Status</th>
+                                <th className="p-3 font-medium text-gray-600">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -156,11 +231,19 @@ const Dashboard: React.FC = () => {
                                         <span className="px-3 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">Aman</span>
                                     }
                                     </td>
+                                    <td className="p-3 flex space-x-2">
+                                        <button onClick={() => handleEditStudent(offender.id)} className="text-blue-500 hover:text-blue-700" title="Edit Siswa">
+                                            <Edit size={18} />
+                                        </button>
+                                        <button onClick={() => handleDeleteStudent(offender.id)} className="text-red-500 hover:text-red-700" title="Hapus Siswa">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                              {frequentOffenders.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="text-center p-4 text-gray-500">Belum ada data pelanggaran.</td>
+                                    <td colSpan={5} className="text-center p-4 text-gray-500">Belum ada data pelanggaran.</td>
                                 </tr>
                             )}
                         </tbody>
