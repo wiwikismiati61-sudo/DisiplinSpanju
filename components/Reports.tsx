@@ -245,16 +245,16 @@ const Reports: React.FC<ReportsProps> = ({ showModal }) => {
     };
 
     const ReportCard = ({ title, description, onDownload, onPreview }: { title: string, description: string, onDownload: () => void, onPreview: () => void }) => (
-        <div className="bg-gray-50 p-6 rounded-lg border flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+        <div className="bg-gray-50 p-4 md:p-6 rounded-lg border flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
             <div>
-                <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-                <p className="text-gray-600 mt-1 max-w-lg">{description}</p>
+                <h3 className="text-base md:text-lg font-semibold text-gray-800">{title}</h3>
+                <p className="text-sm md:text-base text-gray-600 mt-1 max-w-lg">{description}</p>
             </div>
-            <div className="flex items-center space-x-2 w-full md:w-auto">
-                <button onClick={onPreview} className="flex-1 md:flex-none flex justify-center items-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition whitespace-nowrap">
+            <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto">
+                <button onClick={onPreview} className="w-full sm:w-auto flex justify-center items-center bg-white border border-gray-300 text-gray-700 px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-gray-50 transition whitespace-nowrap text-sm md:text-base">
                     <Eye size={18} className="mr-2"/> Lihat
                 </button>
-                <button onClick={onDownload} className="flex-1 md:flex-none flex justify-center items-center bg-brand-secondary text-white px-4 py-2 rounded-lg hover:bg-brand-primary transition whitespace-nowrap">
+                <button onClick={onDownload} className="w-full sm:w-auto flex justify-center items-center bg-brand-secondary text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-brand-primary transition whitespace-nowrap text-sm md:text-base">
                     <Download size={18} className="mr-2"/> Download Excel
                 </button>
             </div>
@@ -262,23 +262,25 @@ const Reports: React.FC<ReportsProps> = ({ showModal }) => {
     );
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-md space-y-8">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-md space-y-6 md:space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Laporan</h1>
-                <p className="text-gray-600">Analisis pelanggaran siswa secara detail dan unduh laporan.</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Laporan</h1>
+                <p className="text-sm md:text-base text-gray-600">Analisis pelanggaran siswa secara detail dan unduh laporan.</p>
             </div>
 
             {/* --- FITUR BARU: LAPORAN DETAIL SISWA (Pivot Style) --- */}
             <div className="border rounded-xl overflow-hidden shadow-sm">
                 <div className="p-4 bg-white border-b flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h2 className="text-2xl font-bold text-gray-800">Laporan Detail Siswa</h2>
-                    <div className="flex items-center space-x-2">
-                        <Filter size={18} className="text-gray-500" />
-                        <label className="font-medium text-gray-700">Kelas:</label>
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-800">Laporan Detail Siswa</h2>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto">
+                        <div className="flex items-center space-x-2">
+                            <Filter size={18} className="text-gray-500" />
+                            <label className="font-medium text-gray-700 text-sm md:text-base">Kelas:</label>
+                        </div>
                         <select 
                             value={selectedClass} 
                             onChange={(e) => setSelectedClass(e.target.value)}
-                            className="border-gray-300 border rounded-md shadow-sm p-2 focus:ring-brand-primary focus:border-brand-primary min-w-[150px]"
+                            className="w-full sm:w-auto border-gray-300 border rounded-md shadow-sm p-2 focus:ring-brand-primary focus:border-brand-primary min-w-[150px] text-sm md:text-base"
                         >
                             <option value="">Pilih Kelas...</option>
                             {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
@@ -408,7 +410,7 @@ const Reports: React.FC<ReportsProps> = ({ showModal }) => {
             
             {/* Bagian Download Laporan Lama */}
             <div className="space-y-4">
-                <h3 className="text-xl font-bold text-gray-700">Download Laporan</h3>
+                <h3 className="text-lg md:text-xl font-bold text-gray-700">Download Laporan</h3>
                 <ReportCard 
                     title="Laporan Siswa yang Melanggar"
                     description="Laporan lengkap berisi semua catatan pelanggaran siswa yang telah terjadi."

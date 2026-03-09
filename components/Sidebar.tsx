@@ -147,17 +147,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
         onClick={() => setIsOpen(false)}
       ></div>
 
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-brand-primary text-white flex flex-col z-40 transform transition-transform duration-300 md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex items-center justify-between p-4 border-b border-brand-dark">
+      <aside className={`fixed top-0 left-0 h-full w-60 md:w-64 bg-brand-primary text-white flex flex-col z-40 transform transition-transform duration-300 md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-center justify-between p-3 md:p-4 border-b border-brand-dark">
           <div className="flex items-center">
-            <img src="https://iili.io/KDFk4fI.png" alt="Logo" className="h-12 w-12 mr-3" />
-            <span className="text-xl font-bold">Manajemen Disiplin</span>
+            <img src="https://iili.io/KDFk4fI.png" alt="Logo" className="h-10 w-10 md:h-12 md:w-12 mr-2 md:mr-3" />
+            <span className="text-lg md:text-xl font-bold">Manajemen Disiplin</span>
           </div>
           <button onClick={() => setIsOpen(false)} className="md:hidden p-1 rounded-md hover:bg-brand-secondary">
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
-        <nav className="flex-1 px-4 py-4 space-y-2">
+        <nav className="flex-1 px-3 md:px-4 py-3 md:py-4 space-y-1 md:space-y-2">
           {navItems.map((item) => (
             <a
               key={item.id}
@@ -167,26 +167,26 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
                 setCurrentPage(item.id as Page);
                 setIsOpen(false); // Close sidebar on mobile after navigation
               }}
-              className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${currentPage === item.id ? 'bg-brand-dark' : 'hover:bg-brand-secondary'}`}>
+              className={`flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors duration-200 ${currentPage === item.id ? 'bg-brand-dark' : 'hover:bg-brand-secondary'}`}>
               <item.icon className="w-5 h-5 mr-3" />
-              <span>{item.label}</span>
+              <span className="text-sm md:text-base">{item.label}</span>
             </a>
           ))}
         </nav>
-        <div className="px-4 py-4 border-t border-brand-dark space-y-2">
-          <button onClick={handleBackup} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+        <div className="px-3 md:px-4 py-3 md:py-4 border-t border-brand-dark space-y-1 md:space-y-2">
+          <button onClick={handleBackup} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
               <FileDown className="w-5 h-5 mr-3" />
-              <span>Backup Data</span>
+              <span className="text-sm md:text-base">Backup Data</span>
           </button>
-          <button onClick={() => backupFileInputRef.current?.click()} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+          <button onClick={() => backupFileInputRef.current?.click()} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
               <FileUp className="w-5 h-5 mr-3" />
-              <span>Restore Data</span>
+              <span className="text-sm md:text-base">Restore Data</span>
           </button>
           <input type="file" ref={backupFileInputRef} onChange={handleRestore} className="hidden" accept=".json" />
 
-          <button onClick={onLogout} className="w-full flex items-center px-4 py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+          <button onClick={onLogout} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
             <LogOut className="w-5 h-5 mr-3" />
-            <span>Logout</span>
+            <span className="text-sm md:text-base">Logout</span>
           </button>
         </div>
       </aside>

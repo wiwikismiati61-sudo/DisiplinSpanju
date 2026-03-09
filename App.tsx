@@ -78,7 +78,7 @@ const App: React.FC = () => {
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
       />
-      <main className="flex-1 overflow-y-auto p-6 md:p-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 w-full">
         <div className="md:hidden flex justify-between items-center mb-4">
             <span className="text-xl font-bold text-brand-primary">Manajemen Disiplin</span>
             <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-md bg-gray-200 text-gray-800">

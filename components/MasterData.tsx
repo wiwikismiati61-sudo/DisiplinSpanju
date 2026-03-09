@@ -64,23 +64,23 @@ const MasterData: React.FC = () => {
     
     const renderStudents = () => (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-700">Data Siswa dan Kelas</h3>
-                <button onClick={() => studentFileInputRef.current?.click()} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-700">Data Siswa dan Kelas</h3>
+                <button onClick={() => studentFileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
                     <UploadCloud size={18} className="mr-2" /> Upload dari Excel
                 </button>
                 <input type="file" ref={studentFileInputRef} onChange={handleStudentFileUpload} className="hidden" accept=".xlsx, .xls" />
             </div>
             <div className="overflow-auto max-h-[60vh] rounded-lg border">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-100 sticky top-0"><tr><th className="p-3">Nama Siswa</th><th className="p-3">Kelas</th><th className="p-3">Aksi</th></tr></thead>
+                <table className="w-full text-left whitespace-nowrap">
+                    <thead className="bg-gray-100 sticky top-0"><tr><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Nama Siswa</th><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Kelas</th><th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th></tr></thead>
                     <tbody>
                         {students.map(s => (
-                            <tr key={s.id} className="border-b">
-                                <td className="p-3">{s.name}</td>
-                                <td className="p-3">{s.class}</td>
-                                <td className="p-3">
-                                    <button onClick={() => setStudents(st => st.filter(st => st.id !== s.id))} className="text-red-500 hover:text-red-700"><Trash2 size={18}/></button>
+                            <tr key={s.id} className="border-b hover:bg-gray-50">
+                                <td className="p-2 md:p-3 text-sm">{s.name}</td>
+                                <td className="p-2 md:p-3 text-sm">{s.class}</td>
+                                <td className="p-2 md:p-3 text-sm">
+                                    <button onClick={() => setStudents(st => st.filter(st => st.id !== s.id))} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                 </td>
                             </tr>
                         ))}
@@ -100,22 +100,22 @@ const MasterData: React.FC = () => {
         dataType: string
     }) => (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-700">{title}</h3>
-                <button onClick={() => fileInputRef.current?.click()} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-700">{title}</h3>
+                <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
                     <UploadCloud size={18} className="mr-2" /> Upload dari Excel
                 </button>
                 <input type="file" ref={fileInputRef} onChange={(e) => onFileUpload(e, setData, idPrefix, dataType)} className="hidden" accept=".xlsx, .xls" />
             </div>
              <div className="overflow-auto max-h-[60vh] rounded-lg border">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-100 sticky top-0"><tr><th className="p-3">Nama</th><th className="p-3">Aksi</th></tr></thead>
+                <table className="w-full text-left whitespace-nowrap">
+                    <thead className="bg-gray-100 sticky top-0"><tr><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Nama</th><th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th></tr></thead>
                     <tbody>
                         {data.map(item => (
-                            <tr key={item.id} className="border-b">
-                                <td className="p-3">{item.name}</td>
-                                <td className="p-3">
-                                    <button onClick={() => setData(d => d.filter(dItem => dItem.id !== item.id))} className="text-red-500 hover:text-red-700"><Trash2 size={18}/></button>
+                            <tr key={item.id} className="border-b hover:bg-gray-50">
+                                <td className="p-2 md:p-3 text-sm">{item.name}</td>
+                                <td className="p-2 md:p-3 text-sm">
+                                    <button onClick={() => setData(d => d.filter(dItem => dItem.id !== item.id))} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                 </td>
                             </tr>
                         ))}
@@ -222,48 +222,48 @@ const MasterData: React.FC = () => {
 
         return (
             <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-semibold text-gray-700">{editingItemId ? `Edit ${title}` : title}</h3>
-                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-700">{editingItemId ? `Edit ${title}` : title}</h3>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
                         <UploadCloud size={18} className="mr-2" /> Upload dari Excel
                     </button>
                     <input type="file" ref={fileInputRef} onChange={handleExcelUpload} className="hidden" accept=".xlsx, .xls" />
                 </div>
                 {editingItemId && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg">
                         {formFields.map(f => (
                             <div key={f.name}>
-                                <label className="block text-sm font-medium text-gray-700">{f.label}</label>
+                                <label className="block text-xs md:text-sm font-medium text-gray-700">{f.label}</label>
                                 {f.type === 'select' ? (
-                                    <select name={f.name} value={(formState[f.name] as string) || ''} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
+                                    <select name={f.name} value={(formState[f.name] as string) || ''} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 text-sm md:text-base">
                                         <option value="">Pilih...</option>
                                         {f.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                     </select>
                                 ) : (
-                                    <input type={f.type} name={f.name} value={(formState[f.name] as any) || ''} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"/>
+                                    <input type={f.type} name={f.name} value={(formState[f.name] as any) || ''} onChange={handleFormChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 text-sm md:text-base"/>
                                 )}
                             </div>
                         ))}
-                        <div className="flex items-center justify-end space-x-2 lg:col-start-4">
-                            <button onClick={handleCancelEdit} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition h-10">
+                        <div className="flex items-center justify-end space-x-2 sm:col-span-2 lg:col-start-4">
+                            <button onClick={handleCancelEdit} className="flex-1 sm:flex-none bg-gray-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-gray-600 transition h-10">
                                 Batal
                             </button>
-                            <button onClick={handleSubmit} className="flex justify-center items-center bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-dark transition h-10">
-                                <Save size={18} className="mr-2" /> Update
+                            <button onClick={handleSubmit} className="flex-1 sm:flex-none flex justify-center items-center bg-brand-primary text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-brand-dark transition h-10">
+                                <Save size={16} className="mr-2" /> Update
                             </button>
                         </div>
                     </div>
                 )}
                  <div className="overflow-auto max-h-[60vh] rounded-lg border">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-100 sticky top-0"><tr>{formFields.map(f => <th key={f.name} className="p-3">{f.label}</th>)}<th className="p-3">Aksi</th></tr></thead>
+                    <table className="w-full text-left whitespace-nowrap">
+                        <thead className="bg-gray-100 sticky top-0"><tr>{formFields.map(f => <th key={f.name} className="p-2 md:p-3 text-sm font-medium text-gray-600">{f.label}</th>)}<th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th></tr></thead>
                         <tbody>
                             {data.map(item => (
-                                <tr key={item.id} className="border-b">
-                                    {formFields.map(f => <td key={f.name} className="p-3">{item[f.name]}</td>)}
-                                    <td className="p-3 whitespace-nowrap">
-                                        <button onClick={() => { setEditingItemId(item.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-blue-500 hover:text-blue-700 mr-3"><Edit size={18}/></button>
-                                        <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={18}/></button>
+                                <tr key={item.id} className="border-b hover:bg-gray-50">
+                                    {formFields.map(f => <td key={f.name} className="p-2 md:p-3 text-sm">{item[f.name]}</td>)}
+                                    <td className="p-2 md:p-3 text-sm whitespace-nowrap">
+                                        <button onClick={() => { setEditingItemId(item.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-blue-500 hover:text-blue-700 mr-3"><Edit size={16}/></button>
+                                        <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                     </td>
                                 </tr>
                             ))}
@@ -275,12 +275,12 @@ const MasterData: React.FC = () => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-md space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">Master Data</h1>
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-md space-y-4 md:space-y-6">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Master Data</h1>
             <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-6 overflow-x-auto pb-1">
+                <nav className="-mb-px flex space-x-4 md:space-x-6 overflow-x-auto pb-1 scrollbar-hide">
                     {(Object.keys(tabLabels) as MasterTab[]).map(tab => (
-                        <button key={tab} onClick={() => { setActiveTab(tab); setEditingItemId(null); }} className={`py-3 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+                        <button key={tab} onClick={() => { setActiveTab(tab); setEditingItemId(null); }} className={`py-2 md:py-3 px-1 border-b-2 font-medium text-xs md:text-sm whitespace-nowrap ${activeTab === tab ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
                             {tabLabels[tab]}
                         </button>
                     ))}
