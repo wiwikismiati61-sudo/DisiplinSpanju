@@ -1,12 +1,11 @@
 
 import React, { useRef } from 'react';
 import { Page } from '../types';
-import { LayoutDashboard, Database, FileText, FileUp, FileDown, LogOut, Settings, ListPlus, X } from 'lucide-react';
+import { LayoutDashboard, Database, FileText, FileUp, FileDown, ListPlus, X } from 'lucide-react';
 
 interface SidebarProps {
   currentPage: Page;
   setCurrentPage: (page: Page) => void;
-  onLogout: () => void;
   onRestoreSuccess: () => void;
   showModal: (title: string, content: React.ReactNode) => void;
   hideModal: () => void;
@@ -14,7 +13,7 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout, onRestoreSuccess, showModal, hideModal, isOpen, setIsOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onRestoreSuccess, showModal, hideModal, isOpen, setIsOpen }) => {
   const backupFileInputRef = useRef<HTMLInputElement>(null);
 
   const navItems = [
@@ -22,7 +21,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
     { id: 'master', label: 'Master', icon: Database },
     { id: 'transaksi', label: 'Transaksi', icon: ListPlus },
     { id: 'laporan', label: 'Laporan', icon: FileText },
-    { id: 'settings', label: 'Pengaturan', icon: Settings },
   ];
 
   const handleBackup = () => {
@@ -85,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
 
             const performRestore = () => {
                 try {
-                    const appKeys = ['students', 'transactions', 'violations', 'consequences', 'followups', 'homeroomTeachers', 'counselors', 'credentials'];
+                    const appKeys = ['students', 'transactions', 'violations', 'consequences', 'followups', 'homeroomTeachers', 'counselors'];
                     
                     appKeys.forEach(key => localStorage.removeItem(key));
                     
@@ -183,11 +181,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onLogout
               <span className="text-sm md:text-base">Restore Data</span>
           </button>
           <input type="file" ref={backupFileInputRef} onChange={handleRestore} className="hidden" accept=".json" />
-
-          <button onClick={onLogout} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
-            <LogOut className="w-5 h-5 mr-3" />
-            <span className="text-sm md:text-base">Logout</span>
-          </button>
         </div>
       </aside>
     </>

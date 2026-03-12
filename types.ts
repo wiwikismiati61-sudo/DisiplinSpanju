@@ -1,5 +1,5 @@
 
-export type Page = 'dashboard' | 'master' | 'transaksi' | 'laporan' | 'settings';
+export type Page = 'dashboard' | 'master' | 'transaksi' | 'laporan';
 
 export enum ViolationLevel {
   Ringan = 'Ringan',

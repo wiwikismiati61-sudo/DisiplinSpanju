@@ -1,19 +1,15 @@
 
 import React, { useState } from 'react';
 import { Menu } from 'lucide-react';
-import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import MasterData from './components/MasterData';
 import Transactions from './components/Transactions';
 import Reports from './components/Reports';
 import Sidebar from './components/Sidebar';
-import Settings from './components/Settings';
 import Modal from './components/Modal';
 import { Page } from './types';
-import { useLocalStorage } from './hooks/useLocalStorage';
 
 const App: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useLocalStorage<boolean>('isLoggedIn', false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [appKey, setAppKey] = useState(0);
 
@@ -32,23 +28,10 @@ const App: React.FC = () => {
     setModal({ isOpen: false, title: '', content: null });
   };
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setCurrentPage('dashboard');
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-  };
-
   const forceReRender = () => {
     setAppKey(prevKey => prevKey + 1);
   };
   
-  if (!isLoggedIn) {
-    return <Login onLogin={handleLogin} />;
-  }
-
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
@@ -59,8 +42,6 @@ const App: React.FC = () => {
         return <Transactions key={appKey} />;
       case 'laporan':
         return <Reports key={appKey} showModal={showModal} />;
-       case 'settings':
-        return <Settings key={appKey} />;
       default:
         return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
     }
@@ -71,7 +52,6 @@ const App: React.FC = () => {
       <Sidebar 
         currentPage={currentPage} 
         setCurrentPage={setCurrentPage} 
-        onLogout={handleLogout} 
         onRestoreSuccess={forceReRender}
         showModal={showModal}
         hideModal={hideModal}
