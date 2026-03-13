@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import MasterData from './components/MasterData';
@@ -7,11 +7,19 @@ import Transactions from './components/Transactions';
 import Reports from './components/Reports';
 import Sidebar from './components/Sidebar';
 import Modal from './components/Modal';
+import Login from './components/Login';
+import Settings from './components/Settings';
 import { Page } from './types';
 
 const App: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [appKey, setAppKey] = useState(0);
+
+  // Clear old localStorage login state if it exists to prevent confusion
+  useEffect(() => {
+    localStorage.removeItem('isLoggedIn');
+  }, []);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -31,17 +39,34 @@ const App: React.FC = () => {
   const forceReRender = () => {
     setAppKey(prevKey => prevKey + 1);
   };
+
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentPage('dashboard');
+  };
   
   const renderPage = () => {
+    if (currentPage === 'dashboard') {
+      return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
+    }
+
+    if (!isLoggedIn) {
+      return <Login onLogin={handleLogin} />;
+    }
+
     switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
       case 'master':
         return <MasterData key={appKey} />;
       case 'transaksi':
         return <Transactions key={appKey} />;
       case 'laporan':
         return <Reports key={appKey} showModal={showModal} />;
+      case 'settings':
+        return <Settings key={appKey} />;
       default:
         return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
     }
@@ -52,6 +77,8 @@ const App: React.FC = () => {
       <Sidebar 
         currentPage={currentPage} 
         setCurrentPage={setCurrentPage} 
+        isLoggedIn={isLoggedIn}
+        onLogout={handleLogout}
         onRestoreSuccess={forceReRender}
         showModal={showModal}
         hideModal={hideModal}

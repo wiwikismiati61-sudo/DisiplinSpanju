@@ -1,11 +1,13 @@
 
 import React, { useRef } from 'react';
 import { Page } from '../types';
-import { LayoutDashboard, Database, FileText, FileUp, FileDown, ListPlus, X } from 'lucide-react';
+import { LayoutDashboard, Database, FileText, FileUp, FileDown, ListPlus, X, LogIn, LogOut, Settings } from 'lucide-react';
 
 interface SidebarProps {
   currentPage: Page;
   setCurrentPage: (page: Page) => void;
+  isLoggedIn: boolean;
+  onLogout: () => void;
   onRestoreSuccess: () => void;
   showModal: (title: string, content: React.ReactNode) => void;
   hideModal: () => void;
@@ -13,7 +15,7 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onRestoreSuccess, showModal, hideModal, isOpen, setIsOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isLoggedIn, onLogout, onRestoreSuccess, showModal, hideModal, isOpen, setIsOpen }) => {
   const backupFileInputRef = useRef<HTMLInputElement>(null);
 
   const navItems = [
@@ -21,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onRestor
     { id: 'master', label: 'Master', icon: Database },
     { id: 'transaksi', label: 'Transaksi', icon: ListPlus },
     { id: 'laporan', label: 'Laporan', icon: FileText },
+    ...(isLoggedIn ? [{ id: 'settings', label: 'Pengaturan', icon: Settings }] : []),
   ];
 
   const handleBackup = () => {
@@ -172,15 +175,31 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, onRestor
           ))}
         </nav>
         <div className="px-3 md:px-4 py-3 md:py-4 border-t border-brand-dark space-y-1 md:space-y-2">
-          <button onClick={handleBackup} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
-              <FileDown className="w-5 h-5 mr-3" />
-              <span className="text-sm md:text-base">Backup Data</span>
-          </button>
-          <button onClick={() => backupFileInputRef.current?.click()} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
-              <FileUp className="w-5 h-5 mr-3" />
-              <span className="text-sm md:text-base">Restore Data</span>
-          </button>
-          <input type="file" ref={backupFileInputRef} onChange={handleRestore} className="hidden" accept=".json" />
+          {isLoggedIn && (
+            <>
+              <button onClick={handleBackup} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+                  <FileDown className="w-5 h-5 mr-3" />
+                  <span className="text-sm md:text-base">Backup Data</span>
+              </button>
+              <button onClick={() => backupFileInputRef.current?.click()} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+                  <FileUp className="w-5 h-5 mr-3" />
+                  <span className="text-sm md:text-base">Restore Data</span>
+              </button>
+              <input type="file" ref={backupFileInputRef} onChange={handleRestore} className="hidden" accept=".json" />
+            </>
+          )}
+
+          {isLoggedIn ? (
+            <button onClick={onLogout} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+              <LogOut className="w-5 h-5 mr-3" />
+              <span className="text-sm md:text-base">Logout</span>
+            </button>
+          ) : (
+            <button onClick={() => { setCurrentPage('master'); setIsOpen(false); }} className="w-full flex items-center px-3 md:px-4 py-2 md:py-3 rounded-lg hover:bg-brand-secondary transition-colors duration-200">
+              <LogIn className="w-5 h-5 mr-3" />
+              <span className="text-sm md:text-base">Login Admin</span>
+            </button>
+          )}
         </div>
       </aside>
     </>
