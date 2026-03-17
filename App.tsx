@@ -54,6 +54,10 @@ const App: React.FC = () => {
       return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
     }
 
+    if (currentPage === 'laporan') {
+      return <Reports key={appKey} showModal={showModal} />;
+    }
+
     if (!isLoggedIn) {
       return <Login onLogin={handleLogin} />;
     }
@@ -63,8 +67,6 @@ const App: React.FC = () => {
         return <MasterData key={appKey} />;
       case 'transaksi':
         return <Transactions key={appKey} />;
-      case 'laporan':
-        return <Reports key={appKey} showModal={showModal} />;
       case 'settings':
         return <Settings key={appKey} />;
       default:

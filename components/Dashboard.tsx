@@ -216,7 +216,6 @@ const Dashboard: React.FC<DashboardProps> = ({ showModal, hideModal }) => {
                                 <th className="p-2 md:p-3 text-sm font-medium text-gray-600">Kelas</th>
                                 <th className="p-2 md:p-3 text-sm font-medium text-gray-600">Jumlah Pelanggaran</th>
                                 <th className="p-2 md:p-3 text-sm font-medium text-gray-600">Status</th>
-                                <th className="p-2 md:p-3 text-sm font-medium text-gray-600">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -231,19 +230,11 @@ const Dashboard: React.FC<DashboardProps> = ({ showModal, hideModal }) => {
                                         <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">Aman</span>
                                     }
                                     </td>
-                                    <td className="p-2 md:p-3 flex space-x-2">
-                                        <button onClick={() => handleEditStudent(offender.id)} className="text-blue-500 hover:text-blue-700" title="Edit Siswa">
-                                            <Edit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDeleteStudent(offender.id)} className="text-red-500 hover:text-red-700" title="Hapus Siswa">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </td>
                                 </tr>
                             ))}
                              {frequentOffenders.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="text-center p-4 text-sm text-gray-500">Belum ada data pelanggaran.</td>
+                                    <td colSpan={4} className="text-center p-4 text-sm text-gray-500">Belum ada data pelanggaran.</td>
                                 </tr>
                             )}
                         </tbody>

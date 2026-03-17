@@ -88,6 +88,26 @@ const Transactions: React.FC = () => {
         return students.filter(s => s.class === selectedClass);
     }, [students, selectedClass]);
 
+    const removeDuplicates = () => {
+        const seen = new Set();
+        const uniqueTransactions = transactions.filter(t => {
+            const key = `${t.date}-${t.time}-${t.studentId}-${t.violationId}`;
+            if (seen.has(key)) {
+                return false;
+            }
+            seen.add(key);
+            return true;
+        });
+
+        if (uniqueTransactions.length < transactions.length) {
+            if (window.confirm(`Ditemukan ${transactions.length - uniqueTransactions.length} data duplikat. Hapus?`)) {
+                setTransactions(uniqueTransactions);
+            }
+        } else {
+            alert('Tidak ditemukan data duplikat.');
+        }
+    };
+
     return (
         <div className="bg-white p-4 md:p-6 rounded-xl shadow-md space-y-4 md:space-y-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Transaksi Pelanggaran</h1>
@@ -144,14 +164,14 @@ const Transactions: React.FC = () => {
                             {followUps.map(f => <option key={f.id} value={f.id}>{f.description}</option>)}
                         </select>
                     </div>
-                     <div>
+                    <div>
                         <label className="block text-xs md:text-sm font-medium">Nama Wali Kelas</label>
                         <select name="homeroomTeacher" value={newTransaction.homeroomTeacher || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md text-sm md:text-base">
                             <option value="">Pilih Wali Kelas</option>
                             {homeroomTeachers.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                         </select>
                     </div>
-                     <div>
+                    <div>
                         <label className="block text-xs md:text-sm font-medium">Nama Guru BK</label>
                         <select name="counselor" value={newTransaction.counselor || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md text-sm md:text-base">
                             <option value="">Pilih Guru BK</option>
@@ -177,7 +197,16 @@ const Transactions: React.FC = () => {
             </form>
 
             <div>
-                <h2 className="text-lg md:text-xl font-semibold text-gray-700 mb-4">Riwayat Transaksi</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-700">Riwayat Transaksi</h2>
+                    <button 
+                        onClick={removeDuplicates}
+                        className="flex items-center bg-red-100 text-red-600 px-3 py-1 rounded-lg hover:bg-red-200 transition text-sm font-medium"
+                    >
+                        <Trash2 size={14} className="mr-1" />
+                        Hapus Data Double
+                    </button>
+                </div>
                 <div className="overflow-auto max-h-[50vh] rounded-lg border">
                     <table className="w-full text-left whitespace-nowrap">
                         <thead className="bg-gray-100 sticky top-0">
