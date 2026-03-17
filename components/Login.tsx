@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
+import { auth } from '../firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 interface LoginProps {
   onLogin: () => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [credentials] = useLocalStorage('credentials', { username: 'admin', password: 'admin123' });
+  const { data: credentialsList } = useFirebaseCollection<any>('credentials');
+  const credentials = credentialsList.find(c => c.id === 'admin') || { username: 'admin', password: 'admin123' };
+  
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Allow login if it matches stored credentials OR the default admin/admin123 fallback
     if (
       (username === credentials?.username && password === credentials?.password) ||
       (username === 'admin' && password === 'admin123')
@@ -21,6 +25,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       onLogin();
     } else {
       setError('Username atau password salah.');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError('');
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      onLogin();
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      setError('Gagal login dengan Google: ' + err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -34,6 +53,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <h1 className="text-2xl font-bold text-gray-800">Login Admin</h1>
           <p className="text-gray-500 mt-2">Silakan login untuk mengakses menu ini</p>
         </div>
+
+        <button
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="w-full flex items-center justify-center bg-white border border-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-lg hover:bg-gray-50 transition duration-300 shadow-sm"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5 mr-3" />
+          {isLoading ? 'Loading...' : 'Login dengan Google'}
+        </button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Atau login dengan username</span>
+          </div>
+        </div>
+
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Username</label>

@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Information about a student",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "class": { "type": "string" }
+      },
+      "required": ["id", "name", "class"]
+    },
+    "Violation": {
+      "title": "Violation",
+      "description": "Types of violations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "level": { "type": "string", "enum": ["Ringan", "Sedang", "Berat"] },
+        "points": { "type": "number" }
+      },
+      "required": ["id", "name", "level", "points"]
+    },
+    "Consequence": {
+      "title": "Consequence",
+      "description": "Consequences for violations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "description": { "type": "string" },
+        "violationLevel": { "type": "string", "enum": ["Ringan", "Sedang", "Berat"] }
+      },
+      "required": ["id", "description", "violationLevel"]
+    },
+    "FollowUp": {
+      "title": "FollowUp",
+      "description": "Follow up actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "description"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Violation transactions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "studentId": { "type": "string" },
+        "violationId": { "type": "string" },
+        "consequenceId": { "type": "string" },
+        "reason": { "type": "string" },
+        "homeroomTeacher": { "type": "string" },
+        "counselor": { "type": "string" },
+        "followUpId": { "type": "string" }
+      },
+      "required": ["id", "date", "time", "studentId", "violationId", "reason", "homeroomTeacher", "counselor", "followUpId"]
+    },
+    "HomeroomTeacher": {
+      "title": "HomeroomTeacher",
+      "description": "Information about a homeroom teacher",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Counselor": {
+      "title": "Counselor",
+      "description": "Information about a counselor",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    }
+  },
+  "firestore": {
+    "students": { "schema": "Student", "description": "Collection of students" },
+    "violations": { "schema": "Violation", "description": "Collection of violations" },
+    "consequences": { "schema": "Consequence", "description": "Collection of consequences" },
+    "followups": { "schema": "FollowUp", "description": "Collection of follow ups" },
+    "transactions": { "schema": "Transaction", "description": "Collection of transactions" },
+    "homeroomTeachers": { "schema": "HomeroomTeacher", "description": "Collection of homeroom teachers" },
+    "counselors": { "schema": "Counselor", "description": "Collection of counselors" }
+  }
+}

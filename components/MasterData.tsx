@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
 import { Student, Violation, Consequence, FollowUp, ViolationLevel, HomeroomTeacher, Counselor } from '../types';
 import { parseStudentsFromExcel, parseNameListFromExcel } from '../utils/excel';
 import { Plus, Trash2, Edit, UploadCloud, Save } from 'lucide-react';
@@ -10,12 +10,13 @@ type MasterTab = 'students' | 'violations' | 'consequences' | 'followups' | 'hom
 const MasterData: React.FC = () => {
     const [activeTab, setActiveTab] = useState<MasterTab>('students');
     const [editingItemId, setEditingItemId] = useState<string | null>(null);
-    const [students, setStudents] = useLocalStorage<Student[]>('students', []);
-    const [violations, setViolations] = useLocalStorage<Violation[]>('violations', []);
-    const [consequences, setConsequences] = useLocalStorage<Consequence[]>('consequences', []);
-    const [followUps, setFollowUps] = useLocalStorage<FollowUp[]>('followups', []);
-    const [homeroomTeachers, setHomeroomTeachers] = useLocalStorage<HomeroomTeacher[]>('homeroomTeachers', []);
-    const [counselors, setCounselors] = useLocalStorage<Counselor[]>('counselors', []);
+    
+    const { data: students, setItem: setStudent, deleteItem: deleteStudent } = useFirebaseCollection<Student>('students');
+    const { data: violations, setItem: setViolation, deleteItem: deleteViolation } = useFirebaseCollection<Violation>('violations');
+    const { data: consequences, setItem: setConsequence, deleteItem: deleteConsequence } = useFirebaseCollection<Consequence>('consequences');
+    const { data: followUps, setItem: setFollowUp, deleteItem: deleteFollowUp } = useFirebaseCollection<FollowUp>('followups');
+    const { data: homeroomTeachers, setItem: setHomeroomTeacher, deleteItem: deleteHomeroomTeacher } = useFirebaseCollection<HomeroomTeacher>('homeroomTeachers');
+    const { data: counselors, setItem: setCounselor, deleteItem: deleteCounselor } = useFirebaseCollection<Counselor>('counselors');
 
     const studentFileInputRef = useRef<HTMLInputElement>(null);
     const teacherFileInputRef = useRef<HTMLInputElement>(null);
@@ -27,7 +28,11 @@ const MasterData: React.FC = () => {
 
         try {
             const newStudents = await parseStudentsFromExcel(file);
-            setStudents(prev => [...prev, ...newStudents.filter(ns => !prev.some(ps => ps.name === ns.name && ps.class === ns.class))]);
+            for (const ns of newStudents) {
+                if (!students.some(ps => ps.name === ns.name && ps.class === ns.class)) {
+                    await setStudent(ns.id, ns);
+                }
+            }
             alert(`${newStudents.length} data siswa berhasil di-upload.`);
         } catch (error) {
             console.error(error);
@@ -41,7 +46,8 @@ const MasterData: React.FC = () => {
 
     const handleNameListUpload = async (
         event: React.ChangeEvent<HTMLInputElement>,
-        setData: React.Dispatch<React.SetStateAction<{id: string, name: string}[]>>,
+        currentData: {id: string, name: string}[],
+        setItem: (id: string, item: any) => Promise<void>,
         idPrefix: string,
         dataType: string
     ) => {
@@ -50,7 +56,11 @@ const MasterData: React.FC = () => {
 
         try {
             const newList = await parseNameListFromExcel(file, idPrefix);
-            setData(prev => [...prev, ...newList.filter(newItem => !prev.some(p => p.name === newItem.name))]);
+            for (const newItem of newList) {
+                if (!currentData.some(p => p.name === newItem.name)) {
+                    await setItem(newItem.id, newItem);
+                }
+            }
             alert(`${newList.length} data ${dataType} berhasil di-upload.`);
         } catch (error) {
             console.error(error);
@@ -80,7 +90,7 @@ const MasterData: React.FC = () => {
                                 <td className="p-2 md:p-3 text-sm">{s.name}</td>
                                 <td className="p-2 md:p-3 text-sm">{s.class}</td>
                                 <td className="p-2 md:p-3 text-sm">
-                                    <button onClick={() => setStudents(st => st.filter(st => st.id !== s.id))} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                                    <button onClick={() => deleteStudent(s.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                 </td>
                             </tr>
                         ))}
@@ -90,12 +100,13 @@ const MasterData: React.FC = () => {
         </div>
     );
     
-    const NameListComponent = ({ title, data, setData, fileInputRef, onFileUpload, idPrefix, dataType }: {
+    const NameListComponent = ({ title, data, setItem, deleteItem, fileInputRef, onFileUpload, idPrefix, dataType }: {
         title: string,
         data: {id: string, name: string}[],
-        setData: React.Dispatch<React.SetStateAction<{id: string, name: string}[]>>,
+        setItem: (id: string, item: any) => Promise<void>,
+        deleteItem: (id: string) => Promise<void>,
         fileInputRef: React.RefObject<HTMLInputElement>,
-        onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, setData: React.Dispatch<React.SetStateAction<{id: string, name: string}[]>>, idPrefix: string, dataType: string) => void,
+        onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, currentData: {id: string, name: string}[], setItem: (id: string, item: any) => Promise<void>, idPrefix: string, dataType: string) => void,
         idPrefix: string,
         dataType: string
     }) => (
@@ -105,7 +116,7 @@ const MasterData: React.FC = () => {
                 <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
                     <UploadCloud size={18} className="mr-2" /> Upload dari Excel
                 </button>
-                <input type="file" ref={fileInputRef} onChange={(e) => onFileUpload(e, setData, idPrefix, dataType)} className="hidden" accept=".xlsx, .xls" />
+                <input type="file" ref={fileInputRef} onChange={(e) => onFileUpload(e, data, setItem, idPrefix, dataType)} className="hidden" accept=".xlsx, .xls" />
             </div>
              <div className="overflow-auto max-h-[60vh] rounded-lg border">
                 <table className="w-full text-left whitespace-nowrap">
@@ -115,7 +126,7 @@ const MasterData: React.FC = () => {
                             <tr key={item.id} className="border-b hover:bg-gray-50">
                                 <td className="p-2 md:p-3 text-sm">{item.name}</td>
                                 <td className="p-2 md:p-3 text-sm">
-                                    <button onClick={() => setData(d => d.filter(dItem => dItem.id !== item.id))} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                                    <button onClick={() => deleteItem(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                 </td>
                             </tr>
                         ))}
@@ -125,7 +136,7 @@ const MasterData: React.FC = () => {
         </div>
     );
     
-    const CrudComponent = <T extends {id: string, [key: string]: any}>({ title, data, setData, formFields }: { title: string, data: T[], setData: React.Dispatch<React.SetStateAction<T[]>>, formFields: { name: string, label: string, type: string, options?: string[] }[] }) => {
+    const CrudComponent = <T extends {id: string, [key: string]: any}>({ title, data, setItem, deleteItem, formFields }: { title: string, data: T[], setItem: (id: string, item: T) => Promise<void>, deleteItem: (id: string) => Promise<void>, formFields: { name: string, label: string, type: string, options?: string[] }[] }) => {
         const [formState, setFormState] = useState<Partial<T>>({});
         const fileInputRef = useRef<HTMLInputElement>(null);
         
@@ -146,16 +157,13 @@ const MasterData: React.FC = () => {
             setFormState(prev => ({ ...prev, [name]: isNumber ? (value === '' ? '' : parseInt(value)) : value }));
         };
 
-        const handleSubmit = () => {
+        const handleSubmit = async () => {
             if (formFields.some(f => !formState[f.name])) {
                 alert('Semua field harus diisi');
                 return;
             }
-            if (editingItemId) {
-                setData(prev => prev.map(item => item.id === editingItemId ? { ...formState } as T : item));
-            } else {
-                setData(prev => [...prev, { ...formState, id: `item-${Date.now()}` } as T]);
-            }
+            const id = editingItemId || `item-${Date.now()}`;
+            await setItem(id, { ...formState, id } as T);
             setFormState({});
             setEditingItemId(null);
         };
@@ -165,9 +173,9 @@ const MasterData: React.FC = () => {
             setEditingItemId(null);
         };
 
-        const handleDelete = (id: string) => {
+        const handleDelete = async (id: string) => {
             if (window.confirm('Anda yakin ingin menghapus item ini?')) {
-                setData(prev => prev.filter(item => item.id !== id));
+                await deleteItem(id);
             }
         };
 
@@ -185,9 +193,10 @@ const MasterData: React.FC = () => {
                     const worksheet = workbook.Sheets[sheetName];
                     const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
-                    const newItems: T[] = [];
-                    json.forEach((row, index) => {
-                        const newItem: any = { id: `item-${Date.now()}-${index}` };
+                    let count = 0;
+                    for (const [index, row] of json.entries()) {
+                        const id = `item-${Date.now()}-${index}`;
+                        const newItem: any = { id };
                         let isValid = true;
                         
                         formFields.forEach(f => {
@@ -200,16 +209,16 @@ const MasterData: React.FC = () => {
                         });
 
                         if (isValid) {
-                            newItems.push(newItem as T);
+                            await setItem(id, newItem as T);
+                            count++;
                         }
-                    });
+                    }
 
-                    if (newItems.length === 0) {
+                    if (count === 0) {
                         throw new Error(`Tidak ada data valid. Pastikan file Excel memiliki kolom: ${formFields.map(f => f.label).join(', ')}`);
                     }
 
-                    setData(prev => [...prev, ...newItems]);
-                    alert(`${newItems.length} data berhasil di-upload.`);
+                    alert(`${count} data berhasil di-upload.`);
                 } catch (error: any) {
                     console.error(error);
                     alert(`Gagal upload: ${error.message}`);
@@ -288,11 +297,11 @@ const MasterData: React.FC = () => {
             </div>
             <div>
                 {activeTab === 'students' && renderStudents()}
-                {activeTab === 'violations' && <CrudComponent title="Jenis Pelanggaran" data={violations} setData={setViolations} formFields={[ {name: 'name', label: 'Nama Pelanggaran', type: 'text'}, {name: 'level', label: 'Tingkatan', type: 'select', options: Object.values(ViolationLevel)}, {name: 'points', label: 'Bobot Poin', type: 'number'} ]} />}
-                {activeTab === 'consequences' && <CrudComponent title="Konsekuensi" data={consequences} setData={setConsequences} formFields={[ {name: 'description', label: 'Deskripsi Konsekuensi', type: 'text'}, {name: 'violationLevel', label: 'Tingkat Pelanggaran', type: 'select', options: Object.values(ViolationLevel)} ]} />}
-                {activeTab === 'followups' && <CrudComponent title="Tindak Lanjut / Follow-up" data={followUps} setData={setFollowUps} formFields={[ {name: 'description', label: 'Deskripsi Tindak Lanjut', type: 'text'} ]} />}
-                {activeTab === 'homeroomTeachers' && <NameListComponent title="Data Wali Kelas" data={homeroomTeachers} setData={setHomeroomTeachers} fileInputRef={teacherFileInputRef} onFileUpload={handleNameListUpload} idPrefix="teacher" dataType="Wali Kelas" />}
-                {activeTab === 'counselors' && <NameListComponent title="Data Guru BK" data={counselors} setData={setCounselors} fileInputRef={counselorFileInputRef} onFileUpload={handleNameListUpload} idPrefix="counselor" dataType="Guru BK" />}
+                {activeTab === 'violations' && <CrudComponent title="Jenis Pelanggaran" data={violations} setItem={setViolation} deleteItem={deleteViolation} formFields={[ {name: 'name', label: 'Nama Pelanggaran', type: 'text'}, {name: 'level', label: 'Tingkatan', type: 'select', options: Object.values(ViolationLevel)}, {name: 'points', label: 'Bobot Poin', type: 'number'} ]} />}
+                {activeTab === 'consequences' && <CrudComponent title="Konsekuensi" data={consequences} setItem={setConsequence} deleteItem={deleteConsequence} formFields={[ {name: 'description', label: 'Deskripsi Konsekuensi', type: 'text'}, {name: 'violationLevel', label: 'Tingkat Pelanggaran', type: 'select', options: Object.values(ViolationLevel)} ]} />}
+                {activeTab === 'followups' && <CrudComponent title="Tindak Lanjut / Follow-up" data={followUps} setItem={setFollowUp} deleteItem={deleteFollowUp} formFields={[ {name: 'description', label: 'Deskripsi Tindak Lanjut', type: 'text'} ]} />}
+                {activeTab === 'homeroomTeachers' && <NameListComponent title="Data Wali Kelas" data={homeroomTeachers} setItem={setHomeroomTeacher} deleteItem={deleteHomeroomTeacher} fileInputRef={teacherFileInputRef} onFileUpload={handleNameListUpload} idPrefix="teacher" dataType="Wali Kelas" />}
+                {activeTab === 'counselors' && <NameListComponent title="Data Guru BK" data={counselors} setItem={setCounselor} deleteItem={deleteCounselor} fileInputRef={counselorFileInputRef} onFileUpload={handleNameListUpload} idPrefix="counselor" dataType="Guru BK" />}
             </div>
         </div>
     );

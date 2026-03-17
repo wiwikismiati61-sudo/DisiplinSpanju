@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
 import { Transaction, Student, Violation, FollowUp, Consequence } from '../types';
 import { exportToExcel } from '../utils/excel';
 import { Download, ChevronRight, ChevronDown, Filter, Eye } from 'lucide-react';
@@ -10,11 +10,11 @@ interface ReportsProps {
 }
 
 const Reports: React.FC<ReportsProps> = ({ showModal }) => {
-    const [transactions] = useLocalStorage<Transaction[]>('transactions', []);
-    const [students] = useLocalStorage<Student[]>('students', []);
-    const [violations] = useLocalStorage<Violation[]>('violations', []);
-    const [followUps] = useLocalStorage<FollowUp[]>('followups', []);
-    const [consequences] = useLocalStorage<Consequence[]>('consequences', []);
+    const { data: transactions } = useFirebaseCollection<Transaction>('transactions');
+    const { data: students } = useFirebaseCollection<Student>('students');
+    const { data: violations } = useFirebaseCollection<Violation>('violations');
+    const { data: followUps } = useFirebaseCollection<FollowUp>('followups');
+    const { data: consequences } = useFirebaseCollection<Consequence>('consequences');
 
     // State untuk Laporan Detail Siswa
     const [selectedClass, setSelectedClass] = useState<string>('');

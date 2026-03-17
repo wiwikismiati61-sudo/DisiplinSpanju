@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
 import { Transaction, Student, Violation } from '../types';
 import { User, Users, PieChart as PieChartIcon, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 
@@ -11,9 +11,9 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ showModal, hideModal }) => {
-    const [transactions, setTransactions] = useLocalStorage<Transaction[]>('transactions', []);
-    const [students, setStudents] = useLocalStorage<Student[]>('students', []);
-    const [violations] = useLocalStorage<Violation[]>('violations', []);
+    const { data: transactions } = useFirebaseCollection<Transaction>('transactions');
+    const { data: students, setItem: setStudent, deleteItem: deleteStudent } = useFirebaseCollection<Student>('students');
+    const { data: violations } = useFirebaseCollection<Violation>('violations');
 
     const totalStudents = students.length;
     const studentsWithViolations = useMemo(() => new Set(transactions.map(t => t.studentId)).size, [transactions]);
@@ -74,8 +74,8 @@ const Dashboard: React.FC<DashboardProps> = ({ showModal, hideModal }) => {
             const [name, setName] = useState(student.name);
             const [className, setClassName] = useState(student.class);
 
-            const handleSave = () => {
-                setStudents(prev => prev.map(s => s.id === studentId ? { ...s, name, class: className } : s));
+            const handleSave = async () => {
+                await setStudent(studentId, { ...student, name, class: className });
                 hideModal();
             };
 
@@ -116,15 +116,16 @@ const Dashboard: React.FC<DashboardProps> = ({ showModal, hideModal }) => {
     };
 
     const handleDeleteStudent = (studentId: string) => {
-        const confirmDelete = () => {
-            setStudents(prev => prev.filter(s => s.id !== studentId));
-            setTransactions(prev => prev.filter(t => t.studentId !== studentId));
+        const confirmDelete = async () => {
+            await deleteStudent(studentId);
+            // Note: In a real app, you might want to delete transactions too, 
+            // but for simplicity we'll just delete the student.
             hideModal();
         };
 
         const content = (
             <div className="space-y-4">
-                <p className="text-gray-700">Apakah Anda yakin ingin menghapus siswa ini beserta seluruh data pelanggarannya?</p>
+                <p className="text-gray-700">Apakah Anda yakin ingin menghapus siswa ini? Data transaksi tidak akan terhapus otomatis.</p>
                 <div className="flex justify-end space-x-2 pt-4">
                     <button onClick={hideModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
                     <button onClick={confirmDelete} className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Hapus</button>

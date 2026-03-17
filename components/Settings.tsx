@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
 import { Save } from 'lucide-react';
 
 const Settings: React.FC = () => {
-    const [credentials, setCredentials] = useLocalStorage('credentials', { username: 'admin', password: 'admin123' });
+    const { data: credentialsList, setItem: setCredentials } = useFirebaseCollection<any>('credentials');
+    const credentials = credentialsList.find(c => c.id === 'admin') || { username: 'admin', password: 'admin123' };
+    
     const [formState, setFormState] = useState({
-        username: credentials?.username || 'admin',
+        username: '',
         newPassword: '',
         confirmPassword: ''
     });
+
+    useEffect(() => {
+        if (credentials) {
+            setFormState(prev => ({
+                ...prev,
+                username: credentials.username
+            }));
+        }
+    }, [credentials]);
+
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -18,7 +30,7 @@ const Settings: React.FC = () => {
         });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage(null);
 
@@ -28,11 +40,12 @@ const Settings: React.FC = () => {
         }
 
         const newCredentials = {
+            id: 'admin',
             username: formState.username || 'admin',
             password: formState.newPassword || credentials?.password || 'admin123'
         };
 
-        setCredentials(newCredentials);
+        await setCredentials('admin', newCredentials);
         setMessage({ type: 'success', text: 'Pengaturan berhasil disimpan.' });
         setFormState({
             ...formState,

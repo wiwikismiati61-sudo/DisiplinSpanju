@@ -1,17 +1,17 @@
 
 import React, { useState, useMemo } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
 import { Transaction, Student, Violation, FollowUp, HomeroomTeacher, Counselor, Consequence } from '../types';
 import { Plus, Trash2, Edit, Save } from 'lucide-react';
 
 const Transactions: React.FC = () => {
-    const [transactions, setTransactions] = useLocalStorage<Transaction[]>('transactions', []);
-    const [students] = useLocalStorage<Student[]>('students', []);
-    const [violations] = useLocalStorage<Violation[]>('violations', []);
-    const [followUps] = useLocalStorage<FollowUp[]>('followups', []);
-    const [consequences] = useLocalStorage<Consequence[]>('consequences', []);
-    const [homeroomTeachers] = useLocalStorage<HomeroomTeacher[]>('homeroomTeachers', []);
-    const [counselors] = useLocalStorage<Counselor[]>('counselors', []);
+    const { data: transactions, setItem: setTransaction, deleteItem: deleteTransaction } = useFirebaseCollection<Transaction>('transactions');
+    const { data: students } = useFirebaseCollection<Student>('students');
+    const { data: violations } = useFirebaseCollection<Violation>('violations');
+    const { data: followUps } = useFirebaseCollection<FollowUp>('followups');
+    const { data: consequences } = useFirebaseCollection<Consequence>('consequences');
+    const { data: homeroomTeachers } = useFirebaseCollection<HomeroomTeacher>('homeroomTeachers');
+    const { data: counselors } = useFirebaseCollection<Counselor>('counselors');
 
     const [selectedClass, setSelectedClass] = useState<string>('');
     const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
@@ -52,7 +52,7 @@ const Transactions: React.FC = () => {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         // Validasi form, consequenceId sekarang wajib jika tersedia di sistem, tapi kita buat fleksibel
         if (!newTransaction.date || !newTransaction.time || !newTransaction.studentId || !newTransaction.violationId || !newTransaction.reason || !newTransaction.homeroomTeacher || !newTransaction.counselor || !newTransaction.followUpId) {
@@ -60,17 +60,14 @@ const Transactions: React.FC = () => {
             return;
         }
 
-        if (editingTransactionId) {
-            setTransactions(prev => prev.map(t => t.id === editingTransactionId ? { ...newTransaction, id: editingTransactionId } as Transaction : t));
-        } else {
-            setTransactions(prev => [{ ...newTransaction, id: `trans-${Date.now()}` } as Transaction, ...prev]);
-        }
+        const id = editingTransactionId || `trans-${Date.now()}`;
+        await setTransaction(id, { ...newTransaction, id } as Transaction);
         
         resetForm();
     };
     
     const populatedTransactions = useMemo(() => {
-        return transactions.map(t => {
+        return [...transactions].sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time)).map(t => {
             const student = students.find(s => s.id === t.studentId);
             const violation = violations.find(v => v.id === t.violationId);
             return {
@@ -88,20 +85,24 @@ const Transactions: React.FC = () => {
         return students.filter(s => s.class === selectedClass);
     }, [students, selectedClass]);
 
-    const removeDuplicates = () => {
+    const removeDuplicates = async () => {
         const seen = new Set();
-        const uniqueTransactions = transactions.filter(t => {
+        const duplicates: string[] = [];
+        
+        transactions.forEach(t => {
             const key = `${t.date}-${t.time}-${t.studentId}-${t.violationId}`;
             if (seen.has(key)) {
-                return false;
+                duplicates.push(t.id);
+            } else {
+                seen.add(key);
             }
-            seen.add(key);
-            return true;
         });
 
-        if (uniqueTransactions.length < transactions.length) {
-            if (window.confirm(`Ditemukan ${transactions.length - uniqueTransactions.length} data duplikat. Hapus?`)) {
-                setTransactions(uniqueTransactions);
+        if (duplicates.length > 0) {
+            if (window.confirm(`Ditemukan ${duplicates.length} data duplikat. Hapus?`)) {
+                for (const id of duplicates) {
+                    await deleteTransaction(id);
+                }
             }
         } else {
             alert('Tidak ditemukan data duplikat.');
@@ -227,7 +228,7 @@ const Transactions: React.FC = () => {
                                     <td className="p-2 md:p-3 text-sm">{t.violationName}</td>
                                     <td className="p-2 md:p-3 text-sm whitespace-nowrap">
                                         <button onClick={() => handleEdit(t.id)} className="text-blue-500 hover:text-blue-700 mr-3"><Edit size={16}/></button>
-                                        <button onClick={() => setTransactions(ts => ts.filter(tsItem => tsItem.id !== t.id))} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                                        <button onClick={() => deleteTransaction(t.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                     </td>
                                 </tr>
                             ))}

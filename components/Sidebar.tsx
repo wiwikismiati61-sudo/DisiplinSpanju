@@ -2,6 +2,9 @@
 import React, { useRef } from 'react';
 import { Page } from '../types';
 import { LayoutDashboard, Database, FileText, FileUp, FileDown, ListPlus, X, LogIn, LogOut, Settings } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../utils/firestoreError';
 
 interface SidebarProps {
   currentPage: Page;
@@ -26,27 +29,29 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isLogged
     ...(isLoggedIn ? [{ id: 'settings', label: 'Pengaturan', icon: Settings }] : []),
   ];
 
-  const handleBackup = () => {
+  const handleBackup = async () => {
+    const appKeys = ['students', 'transactions', 'violations', 'consequences', 'followups', 'homeroomTeachers', 'counselors', 'credentials'];
     const data: { [key: string]: any } = {};
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key !== 'isLoggedIn') {
-            try {
-              data[key] = JSON.parse(localStorage.getItem(key)!);
-            } catch (e) {
-              console.warn(`Tidak dapat mengurai item localStorage ${key}, melewati backup.`);
-            }
+    
+    try {
+        for (const key of appKeys) {
+            const querySnapshot = await getDocs(collection(db, key));
+            data[key] = querySnapshot.docs.map(doc => doc.data());
         }
+        
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        
+        const exportFileDefaultName = `backup-disiplin-siswa-firebase-${new Date().toISOString().slice(0,10)}.json`;
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    } catch (error) {
+        console.error("Backup failed:", error);
+        alert("Gagal melakukan backup data dari Firebase.");
     }
-    const dataStr = JSON.stringify(data, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `backup-disiplin-siswa-${new Date().toISOString().slice(0,10)}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
   };
   
   const handleRestore = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,29 +89,51 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isLogged
                 return;
             }
 
-            const performRestore = () => {
+            const performRestore = async () => {
                 try {
-                    const appKeys = ['students', 'transactions', 'violations', 'consequences', 'followups', 'homeroomTeachers', 'counselors'];
+                    const appKeys = ['students', 'transactions', 'violations', 'consequences', 'followups', 'homeroomTeachers', 'counselors', 'credentials'];
                     
-                    appKeys.forEach(key => localStorage.removeItem(key));
+                    const batch = writeBatch(db);
                     
-                    appKeys.forEach(key => {
-                        if (data.hasOwnProperty(key)) {
-                            localStorage.setItem(key, JSON.stringify(data[key]));
-                        } else {
-                            // Set empty array as default for missing keys to prevent issues
-                            localStorage.setItem(key, JSON.stringify([]));
+                    for (const key of appKeys) {
+                        if (data[key] && Array.isArray(data[key])) {
+                            // Note: This doesn't delete existing data in Firestore.
+                            // For a true restore, we might want to delete existing docs first, 
+                            // but that's dangerous and complex with batch limits.
+                            // We'll just overwrite/add.
+                            data[key].forEach((item: any) => {
+                                if (item.id) {
+                                    const docRef = doc(db, key, item.id);
+                                    batch.set(docRef, item);
+                                }
+                            });
                         }
-                    });
+                    }
+
+                    await batch.commit();
 
                     hideModal();
                     setTimeout(() => {
-                      showModal("Sukses", <div className="flex flex-col items-center text-center"><p className="mb-4">Restore berhasil. Antarmuka akan diperbarui.</p><button onClick={hideModal} className="px-4 py-2 bg-brand-primary text-white rounded-md hover:bg-brand-dark">OK</button></div>);
+                      showModal("Sukses", <div className="flex flex-col items-center text-center"><p className="mb-4">Restore ke Firebase berhasil. Antarmuka akan diperbarui.</p><button onClick={hideModal} className="px-4 py-2 bg-brand-primary text-white rounded-md hover:bg-brand-dark">OK</button></div>);
                       onRestoreSuccess();
                     }, 100); 
                 } catch (err) {
+                    console.error("Restore failed:", err);
+                    try {
+                      handleFirestoreError(err, OperationType.WRITE, "batch_restore");
+                    } catch (e: any) {
+                      // If it's the JSON error, we can show a better message
+                      if (e.message.startsWith('{')) {
+                        const info = JSON.parse(e.message);
+                        if (info.error.includes('permission')) {
+                          hideModal();
+                          setTimeout(() => showError("Izin Ditolak: Anda harus login dengan akun Google Admin (wiwikismiati61@guru.smp.belajar.id) untuk melakukan restore data."), 10);
+                          return;
+                        }
+                      }
+                    }
                     hideModal();
-                    setTimeout(() => showError("Kesalahan Kritis: Gagal menyimpan data saat restore."), 10);
+                    setTimeout(() => showError("Kesalahan Kritis: Gagal menyimpan data ke Firebase saat restore."), 10);
                 }
             };
             
@@ -118,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isLogged
                   <li>{data.transactions?.length || 0} Transaksi</li>
                   <li>{data.violations?.length || 0} Jenis Pelanggaran</li>
                 </ul>
-                <p className="font-semibold text-yellow-800 bg-yellow-100 p-3 rounded-md">Anda yakin ingin melanjutkan? Semua data saat ini akan diganti.</p>
+                <p className="font-semibold text-yellow-800 bg-yellow-100 p-3 rounded-md">Anda yakin ingin melanjutkan? Data di Firebase akan diperbarui dengan data dari file ini.</p>
                 <div className="flex justify-end space-x-3 mt-6">
                   <button onClick={hideModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Batal</button>
                   <button onClick={performRestore} className="px-4 py-2 bg-brand-primary text-white rounded-md hover:bg-brand-dark">Lanjutkan</button>

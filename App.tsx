@@ -10,11 +10,33 @@ import Modal from './components/Modal';
 import Login from './components/Login';
 import Settings from './components/Settings';
 import { Page } from './types';
+import { migrateLocalStorageToFirebase } from './utils/migration';
+
+import { auth } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [appKey, setAppKey] = useState(0);
+  const [isMigrating, setIsMigrating] = useState(true);
+
+  // Handle Firebase Auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        // Run migration when user logs in
+        migrateLocalStorageToFirebase().then(() => {
+          setIsMigrating(false);
+          forceReRender();
+        });
+      } else {
+        setIsMigrating(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Clear old localStorage login state if it exists to prevent confusion
   useEffect(() => {
@@ -50,6 +72,15 @@ const App: React.FC = () => {
   };
   
   const renderPage = () => {
+    if (isMigrating) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
+          <p className="text-gray-600">Menghubungkan ke database...</p>
+        </div>
+      );
+    }
+
     if (currentPage === 'dashboard') {
       return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
     }
