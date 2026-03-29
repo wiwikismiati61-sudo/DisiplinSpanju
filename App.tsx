@@ -12,26 +12,58 @@ import Settings from './components/Settings';
 import { Page } from './types';
 import { migrateLocalStorageToFirebase } from './utils/migration';
 
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
+export type UserRole = 'viewer' | 'editor' | 'admin';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<UserRole>('viewer');
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [appKey, setAppKey] = useState(0);
   const [isMigrating, setIsMigrating] = useState(true);
 
   // Handle Firebase Auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setIsLoggedIn(true);
+        
+        // Fetch user role
+        let role: UserRole = 'viewer';
+        if (user.email === 'wiwikismiati61@guru.smp.belajar.id') {
+          role = 'admin';
+          // Ensure default admin is in the database
+          try {
+            await setDoc(doc(db, 'users', user.email), {
+              name: user.displayName || 'Admin',
+              role: 'admin'
+            }, { merge: true });
+          } catch (e) {
+            console.error("Failed to set default admin role", e);
+          }
+        } else if (user.email) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', user.email));
+            if (userDoc.exists()) {
+              role = userDoc.data().role as UserRole;
+            }
+          } catch (e) {
+            console.error("Failed to fetch user role", e);
+          }
+        }
+        setUserRole(role);
+
         // Run migration when user logs in
         migrateLocalStorageToFirebase().then(() => {
           setIsMigrating(false);
           forceReRender();
         });
       } else {
+        setIsLoggedIn(false);
+        setUserRole('viewer');
         setIsMigrating(false);
       }
     });
@@ -95,11 +127,11 @@ const App: React.FC = () => {
 
     switch (currentPage) {
       case 'master':
-        return <MasterData key={appKey} />;
+        return <MasterData key={appKey} userRole={userRole} />;
       case 'transaksi':
-        return <Transactions key={appKey} />;
+        return <Transactions key={appKey} userRole={userRole} />;
       case 'settings':
-        return <Settings key={appKey} />;
+        return userRole === 'admin' ? <Settings key={appKey} /> : <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
       default:
         return <Dashboard key={appKey} showModal={showModal} hideModal={hideModal} />;
     }
@@ -111,6 +143,7 @@ const App: React.FC = () => {
         currentPage={currentPage} 
         setCurrentPage={setCurrentPage} 
         isLoggedIn={isLoggedIn}
+        userRole={userRole}
         onLogout={handleLogout}
         onRestoreSuccess={forceReRender}
         showModal={showModal}

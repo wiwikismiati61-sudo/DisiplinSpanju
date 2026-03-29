@@ -15,10 +15,21 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function getUserRole() {
+      let userDoc = exists(/databases/$(database)/documents/users/$(request.auth.token.email)) ? 
+                    get(/databases/$(database)/documents/users/$(request.auth.token.email)) : null;
+      return userDoc != null ? userDoc.data.role : 'viewer';
+    }
+
     function isAdmin() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "wiwikismiati61@guru.smp.belajar.id" && request.auth.token.email_verified == true));
+        ((request.auth.token.email == "wiwikismiati61@guru.smp.belajar.id" && request.auth.token.email_verified == true) ||
+         getUserRole() == 'admin');
+    }
+
+    function isEditor() {
+      return isAuthenticated() &&
+        (isAdmin() || getUserRole() == 'editor');
     }
 
     function hasOnlyAllowedFields(fields) {
@@ -30,16 +41,56 @@ service cloud.firestore {
     // ===============================================================
 
     // Allow anyone to read data (for dashboard and reports)
-    match /{collectionName}/{docId} {
+    match /students/{docId} {
       allow read: if true;
-      // Only admins can write to any collection
-      allow write: if isAdmin();
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
+    }
+    match /violations/{docId} {
+      allow read: if true;
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
+    }
+    match /consequences/{docId} {
+      allow read: if true;
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
+    }
+    match /followups/{docId} {
+      allow read: if true;
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
+    }
+    match /transactions/{docId} {
+      allow read: if true;
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
+    }
+    match /homeroomTeachers/{docId} {
+      allow read: if true;
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
+    }
+    match /counselors/{docId} {
+      allow read: if true;
+      allow create, update: if isEditor();
+      allow delete: if isAdmin();
     }
 
     // User profiles (for role management)
-    match /users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
+    match /users/{userEmail} {
+      allow read: if isAuthenticated() && (request.auth.token.email == userEmail || isAdmin());
       allow write: if isAdmin();
+    }
+
+    // User secrets (for password management)
+    match /user_secrets/{userId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Credentials collection (legacy)
+    match /credentials/{docId} {
+      allow read, write: if isAdmin();
     }
   }
 }

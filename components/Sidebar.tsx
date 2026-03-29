@@ -5,11 +5,13 @@ import { LayoutDashboard, Database, FileText, FileUp, FileDown, ListPlus, X, Log
 import { db } from '../firebase';
 import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../utils/firestoreError';
+import { UserRole } from '../App';
 
 interface SidebarProps {
   currentPage: Page;
   setCurrentPage: (page: Page) => void;
   isLoggedIn: boolean;
+  userRole: UserRole;
   onLogout: () => void;
   onRestoreSuccess: () => void;
   showModal: (title: string, content: React.ReactNode) => void;
@@ -18,7 +20,7 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isLoggedIn, onLogout, onRestoreSuccess, showModal, hideModal, isOpen, setIsOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isLoggedIn, userRole, onLogout, onRestoreSuccess, showModal, hideModal, isOpen, setIsOpen }) => {
   const backupFileInputRef = useRef<HTMLInputElement>(null);
 
   const navItems = [
@@ -26,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isLogged
     { id: 'master', label: 'Master', icon: Database },
     { id: 'transaksi', label: 'Transaksi', icon: ListPlus },
     { id: 'laporan', label: 'Laporan', icon: FileText },
-    ...(isLoggedIn ? [{ id: 'settings', label: 'Pengaturan', icon: Settings }] : []),
+    ...(isLoggedIn && userRole === 'admin' ? [{ id: 'settings', label: 'Pengaturan', icon: Settings }] : []),
   ];
 
   const handleBackup = async () => {

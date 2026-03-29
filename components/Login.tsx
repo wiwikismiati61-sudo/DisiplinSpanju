@@ -1,30 +1,31 @@
 import React, { useState } from 'react';
-import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
 import { auth } from '../firebase';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 
 interface LoginProps {
   onLogin: () => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const { data: credentialsList } = useFirebaseCollection<any>('credentials');
-  const credentials = credentialsList.find(c => c.id === 'admin') || { username: 'admin', password: 'admin123' };
-  
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      (username === credentials?.username && password === credentials?.password) ||
-      (username === 'admin' && password === 'admin123')
-    ) {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const fakeEmail = `${username.toLowerCase().replace(/\s+/g, '')}@app.local`;
+      await signInWithEmailAndPassword(auth, fakeEmail, password);
       onLogin();
-    } else {
+    } catch (err: any) {
+      console.error("Login error:", err);
       setError('Username atau password salah.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -96,9 +97,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+            disabled={isLoading}
+            className={`w-full bg-brand-primary hover:bg-brand-dark text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Login
+            {isLoading ? 'Loading...' : 'Login'}
           </button>
         </form>
       </div>

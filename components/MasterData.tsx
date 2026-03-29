@@ -4,10 +4,15 @@ import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
 import { Student, Violation, Consequence, FollowUp, ViolationLevel, HomeroomTeacher, Counselor } from '../types';
 import { parseStudentsFromExcel, parseNameListFromExcel } from '../utils/excel';
 import { Plus, Trash2, Edit, UploadCloud, Save } from 'lucide-react';
+import { UserRole } from '../App';
 
 type MasterTab = 'students' | 'violations' | 'consequences' | 'followups' | 'homeroomTeachers' | 'counselors';
 
-const MasterData: React.FC = () => {
+interface MasterDataProps {
+    userRole: UserRole;
+}
+
+const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
     const [activeTab, setActiveTab] = useState<MasterTab>('students');
     const [editingItemId, setEditingItemId] = useState<string | null>(null);
     
@@ -22,7 +27,11 @@ const MasterData: React.FC = () => {
     const teacherFileInputRef = useRef<HTMLInputElement>(null);
     const counselorFileInputRef = useRef<HTMLInputElement>(null);
 
+    const canEdit = userRole === 'admin' || userRole === 'editor';
+    const canDelete = userRole === 'admin';
+
     const handleStudentFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!canEdit) return;
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -51,6 +60,7 @@ const MasterData: React.FC = () => {
         idPrefix: string,
         dataType: string
     ) => {
+        if (!canEdit) return;
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -76,22 +86,26 @@ const MasterData: React.FC = () => {
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
                 <h3 className="text-lg md:text-xl font-semibold text-gray-700">Data Siswa dan Kelas</h3>
-                <button onClick={() => studentFileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
-                    <UploadCloud size={18} className="mr-2" /> Upload dari Excel
-                </button>
+                {canEdit && (
+                    <button onClick={() => studentFileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
+                        <UploadCloud size={18} className="mr-2" /> Upload dari Excel
+                    </button>
+                )}
                 <input type="file" ref={studentFileInputRef} onChange={handleStudentFileUpload} className="hidden" accept=".xlsx, .xls" />
             </div>
             <div className="overflow-auto max-h-[60vh] rounded-lg border">
                 <table className="w-full text-left whitespace-nowrap">
-                    <thead className="bg-gray-100 sticky top-0"><tr><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Nama Siswa</th><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Kelas</th><th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th></tr></thead>
+                    <thead className="bg-gray-100 sticky top-0"><tr><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Nama Siswa</th><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Kelas</th>{canDelete && <th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th>}</tr></thead>
                     <tbody>
                         {students.map(s => (
                             <tr key={s.id} className="border-b hover:bg-gray-50">
                                 <td className="p-2 md:p-3 text-sm">{s.name}</td>
                                 <td className="p-2 md:p-3 text-sm">{s.class}</td>
-                                <td className="p-2 md:p-3 text-sm">
-                                    <button onClick={() => deleteStudent(s.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
-                                </td>
+                                {canDelete && (
+                                    <td className="p-2 md:p-3 text-sm">
+                                        <button onClick={() => deleteStudent(s.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>
@@ -113,21 +127,25 @@ const MasterData: React.FC = () => {
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
                 <h3 className="text-lg md:text-xl font-semibold text-gray-700">{title}</h3>
-                <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
-                    <UploadCloud size={18} className="mr-2" /> Upload dari Excel
-                </button>
+                {canEdit && (
+                    <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
+                        <UploadCloud size={18} className="mr-2" /> Upload dari Excel
+                    </button>
+                )}
                 <input type="file" ref={fileInputRef} onChange={(e) => onFileUpload(e, data, setItem, idPrefix, dataType)} className="hidden" accept=".xlsx, .xls" />
             </div>
              <div className="overflow-auto max-h-[60vh] rounded-lg border">
                 <table className="w-full text-left whitespace-nowrap">
-                    <thead className="bg-gray-100 sticky top-0"><tr><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Nama</th><th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th></tr></thead>
+                    <thead className="bg-gray-100 sticky top-0"><tr><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Nama</th>{canDelete && <th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th>}</tr></thead>
                     <tbody>
                         {data.map(item => (
                             <tr key={item.id} className="border-b hover:bg-gray-50">
                                 <td className="p-2 md:p-3 text-sm">{item.name}</td>
-                                <td className="p-2 md:p-3 text-sm">
-                                    <button onClick={() => deleteItem(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
-                                </td>
+                                {canDelete && (
+                                    <td className="p-2 md:p-3 text-sm">
+                                        <button onClick={() => deleteItem(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>
@@ -180,6 +198,7 @@ const MasterData: React.FC = () => {
         };
 
         const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+            if (!canEdit) return;
             const file = e.target.files?.[0];
             if (!file) return;
 
@@ -233,12 +252,14 @@ const MasterData: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
                     <h3 className="text-lg md:text-xl font-semibold text-gray-700">{editingItemId ? `Edit ${title}` : title}</h3>
-                    <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
-                        <UploadCloud size={18} className="mr-2" /> Upload dari Excel
-                    </button>
+                    {canEdit && (
+                        <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
+                            <UploadCloud size={18} className="mr-2" /> Upload dari Excel
+                        </button>
+                    )}
                     <input type="file" ref={fileInputRef} onChange={handleExcelUpload} className="hidden" accept=".xlsx, .xls" />
                 </div>
-                {editingItemId && (
+                {editingItemId && canEdit && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg">
                         {formFields.map(f => (
                             <div key={f.name}>
@@ -265,15 +286,17 @@ const MasterData: React.FC = () => {
                 )}
                  <div className="overflow-auto max-h-[60vh] rounded-lg border">
                     <table className="w-full text-left whitespace-nowrap">
-                        <thead className="bg-gray-100 sticky top-0"><tr>{formFields.map(f => <th key={f.name} className="p-2 md:p-3 text-sm font-medium text-gray-600">{f.label}</th>)}<th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th></tr></thead>
+                        <thead className="bg-gray-100 sticky top-0"><tr>{formFields.map(f => <th key={f.name} className="p-2 md:p-3 text-sm font-medium text-gray-600">{f.label}</th>)}{(canEdit || canDelete) && <th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th>}</tr></thead>
                         <tbody>
                             {data.map(item => (
                                 <tr key={item.id} className="border-b hover:bg-gray-50">
                                     {formFields.map(f => <td key={f.name} className="p-2 md:p-3 text-sm">{item[f.name]}</td>)}
-                                    <td className="p-2 md:p-3 text-sm whitespace-nowrap">
-                                        <button onClick={() => { setEditingItemId(item.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-blue-500 hover:text-blue-700 mr-3"><Edit size={16}/></button>
-                                        <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
-                                    </td>
+                                    {(canEdit || canDelete) && (
+                                        <td className="p-2 md:p-3 text-sm whitespace-nowrap">
+                                            {canEdit && <button onClick={() => { setEditingItemId(item.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-blue-500 hover:text-blue-700 mr-3"><Edit size={16}/></button>}
+                                            {canDelete && <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>}
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
