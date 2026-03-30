@@ -4,6 +4,7 @@ import { useFirebaseCollection } from '../hooks/useFirebaseCollection';
 import { Transaction, Student, Violation, FollowUp, HomeroomTeacher, Counselor, Consequence } from '../types';
 import { Plus, Trash2, Edit, Save } from 'lucide-react';
 import { UserRole } from '../App';
+import ConfirmModal from './ConfirmModal';
 
 interface TransactionsProps {
     userRole: UserRole;
@@ -95,6 +96,25 @@ const Transactions: React.FC<TransactionsProps> = ({ userRole }) => {
         return students.filter(s => s.class === selectedClass);
     }, [students, selectedClass]);
 
+    const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+    const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+    const [duplicatesToRemove, setDuplicatesToRemove] = useState<string[]>([]);
+
+    const confirmDeleteTransaction = async () => {
+        if (transactionToDelete) {
+            await deleteTransaction(transactionToDelete);
+            setTransactionToDelete(null);
+        }
+    };
+
+    const confirmRemoveDuplicates = async () => {
+        for (const id of duplicatesToRemove) {
+            await deleteTransaction(id);
+        }
+        setDuplicateModalOpen(false);
+        setDuplicatesToRemove([]);
+    };
+
     const removeDuplicates = async () => {
         if (!canDelete) return;
         const seen = new Set();
@@ -110,11 +130,8 @@ const Transactions: React.FC<TransactionsProps> = ({ userRole }) => {
         });
 
         if (duplicates.length > 0) {
-            if (window.confirm(`Ditemukan ${duplicates.length} data duplikat. Hapus?`)) {
-                for (const id of duplicates) {
-                    await deleteTransaction(id);
-                }
-            }
+            setDuplicatesToRemove(duplicates);
+            setDuplicateModalOpen(true);
         } else {
             alert('Tidak ditemukan data duplikat.');
         }
@@ -122,6 +139,23 @@ const Transactions: React.FC<TransactionsProps> = ({ userRole }) => {
 
     return (
         <div className="bg-white p-4 md:p-6 rounded-xl shadow-md space-y-4 md:space-y-6">
+            <ConfirmModal
+                isOpen={!!transactionToDelete}
+                title="Hapus Transaksi"
+                message="Anda yakin ingin menghapus transaksi ini?"
+                onConfirm={confirmDeleteTransaction}
+                onCancel={() => setTransactionToDelete(null)}
+            />
+            <ConfirmModal
+                isOpen={duplicateModalOpen}
+                title="Hapus Data Duplikat"
+                message={`Ditemukan ${duplicatesToRemove.length} data duplikat. Hapus?`}
+                onConfirm={confirmRemoveDuplicates}
+                onCancel={() => {
+                    setDuplicateModalOpen(false);
+                    setDuplicatesToRemove([]);
+                }}
+            />
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Transaksi Pelanggaran</h1>
             
             {canEdit && (
@@ -244,7 +278,7 @@ const Transactions: React.FC<TransactionsProps> = ({ userRole }) => {
                                     {(canEdit || canDelete) && (
                                         <td className="p-2 md:p-3 text-sm whitespace-nowrap">
                                             {canEdit && <button onClick={() => handleEdit(t.id)} className="text-blue-500 hover:text-blue-700 mr-3"><Edit size={16}/></button>}
-                                            {canDelete && <button onClick={() => deleteTransaction(t.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>}
+                                            {canDelete && <button onClick={() => setTransactionToDelete(t.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>}
                                         </td>
                                     )}
                                 </tr>

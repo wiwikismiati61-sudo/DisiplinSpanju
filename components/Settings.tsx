@@ -6,6 +6,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, up
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import firebaseConfig from '../firebase-applet-config.json';
+import ConfirmModal from './ConfirmModal';
 
 interface UserRole {
     id: string; // fake email (username@app.local)
@@ -127,27 +128,33 @@ const Settings: React.FC = () => {
         setMessage(null);
     };
 
-    const handleDelete = async (user: UserRole) => {
-        const displayIdentifier = user.username || user.name || user.id;
-        if (window.confirm(`Apakah Anda yakin ingin menghapus akses untuk ${displayIdentifier}?`)) {
-            try {
-                if (user.id.endsWith('@app.local')) {
-                    const secretDoc = await getDoc(doc(db, 'user_secrets', user.id));
-                    if (secretDoc.exists()) {
-                        const oldPassword = secretDoc.data().password;
-                        const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
-                        const secondaryAuth = getAuth(secondaryApp);
-                        await signInWithEmailAndPassword(secondaryAuth, user.id, oldPassword);
-                        await deleteAuthUser(secondaryAuth.currentUser!);
-                        await deleteDoc(doc(db, 'user_secrets', user.id));
-                    }
+    const [userToDelete, setUserToDelete] = useState<UserRole | null>(null);
+
+    const confirmDeleteUser = async () => {
+        if (!userToDelete) return;
+        const user = userToDelete;
+        try {
+            if (user.id.endsWith('@app.local')) {
+                const secretDoc = await getDoc(doc(db, 'user_secrets', user.id));
+                if (secretDoc.exists()) {
+                    const oldPassword = secretDoc.data().password;
+                    const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
+                    const secondaryAuth = getAuth(secondaryApp);
+                    await signInWithEmailAndPassword(secondaryAuth, user.id, oldPassword);
+                    await deleteAuthUser(secondaryAuth.currentUser!);
+                    await deleteDoc(doc(db, 'user_secrets', user.id));
                 }
-                await deleteUser(user.id);
-                setMessage({ type: 'success', text: 'Pengguna berhasil dihapus.' });
-            } catch (error: any) {
-                setMessage({ type: 'error', text: 'Gagal menghapus pengguna: ' + error.message });
             }
+            await deleteUser(user.id);
+            setMessage({ type: 'success', text: 'Pengguna berhasil dihapus.' });
+        } catch (error: any) {
+            setMessage({ type: 'error', text: 'Gagal menghapus pengguna: ' + error.message });
         }
+        setUserToDelete(null);
+    };
+
+    const handleDelete = (user: UserRole) => {
+        setUserToDelete(user);
     };
 
     const getRoleBadge = (role: string) => {
@@ -165,6 +172,13 @@ const Settings: React.FC = () => {
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
+            <ConfirmModal
+                isOpen={!!userToDelete}
+                title="Hapus Pengguna"
+                message={`Apakah Anda yakin ingin menghapus akses untuk ${userToDelete?.username || userToDelete?.name || userToDelete?.id}?`}
+                onConfirm={confirmDeleteUser}
+                onCancel={() => setUserToDelete(null)}
+            />
             <div className="bg-white p-4 md:p-6 rounded-xl shadow-md space-y-4 md:space-y-6">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Pengaturan Akun (Multiuser)</h1>
                 <p className="text-gray-600 text-sm">{isEditing ? 'Edit hak akses pengguna.' : 'Tambahkan pengguna baru dan atur hak akses mereka untuk menggunakan aplikasi ini.'}</p>

@@ -5,6 +5,7 @@ import { Student, Violation, Consequence, FollowUp, ViolationLevel, HomeroomTeac
 import { parseStudentsFromExcel, parseNameListFromExcel } from '../utils/excel';
 import { Plus, Trash2, Edit, UploadCloud, Save } from 'lucide-react';
 import { UserRole } from '../App';
+import ConfirmModal from './ConfirmModal';
 
 type MasterTab = 'students' | 'violations' | 'consequences' | 'followups' | 'homeroomTeachers' | 'counselors';
 
@@ -82,8 +83,24 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
         }
     };
     
+    const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+
+    const confirmDeleteStudent = async () => {
+        if (studentToDelete) {
+            await deleteStudent(studentToDelete);
+            setStudentToDelete(null);
+        }
+    };
+
     const renderStudents = () => (
         <div className="space-y-4">
+            <ConfirmModal
+                isOpen={!!studentToDelete}
+                title="Hapus Siswa"
+                message="Anda yakin ingin menghapus data siswa ini?"
+                onConfirm={confirmDeleteStudent}
+                onCancel={() => setStudentToDelete(null)}
+            />
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
                 <h3 className="text-lg md:text-xl font-semibold text-gray-700">Data Siswa dan Kelas</h3>
                 {canEdit && (
@@ -103,7 +120,7 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
                                 <td className="p-2 md:p-3 text-sm">{s.class}</td>
                                 {canDelete && (
                                     <td className="p-2 md:p-3 text-sm">
-                                        <button onClick={() => deleteStudent(s.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                                        <button onClick={() => setStudentToDelete(s.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                     </td>
                                 )}
                             </tr>
@@ -123,8 +140,25 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
         onFileUpload: (event: React.ChangeEvent<HTMLInputElement>, currentData: {id: string, name: string}[], setItem: (id: string, item: any) => Promise<void>, idPrefix: string, dataType: string) => void,
         idPrefix: string,
         dataType: string
-    }) => (
+    }) => {
+        const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+        const confirmDelete = async () => {
+            if (itemToDelete) {
+                await deleteItem(itemToDelete);
+                setItemToDelete(null);
+            }
+        };
+
+        return (
         <div className="space-y-4">
+            <ConfirmModal
+                isOpen={!!itemToDelete}
+                title={`Hapus ${title}`}
+                message={`Anda yakin ingin menghapus data ini?`}
+                onConfirm={confirmDelete}
+                onCancel={() => setItemToDelete(null)}
+            />
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
                 <h3 className="text-lg md:text-xl font-semibold text-gray-700">{title}</h3>
                 {canEdit && (
@@ -143,7 +177,7 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
                                 <td className="p-2 md:p-3 text-sm">{item.name}</td>
                                 {canDelete && (
                                     <td className="p-2 md:p-3 text-sm">
-                                        <button onClick={() => deleteItem(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+                                        <button onClick={() => setItemToDelete(item.id)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                     </td>
                                 )}
                             </tr>
@@ -152,7 +186,8 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
                 </table>
             </div>
         </div>
-    );
+        );
+    };
     
     const CrudComponent = <T extends {id: string, [key: string]: any}>({ title, data, setItem, deleteItem, formFields }: { title: string, data: T[], setItem: (id: string, item: T) => Promise<void>, deleteItem: (id: string) => Promise<void>, formFields: { name: string, label: string, type: string, options?: string[] }[] }) => {
         const [formState, setFormState] = useState<Partial<T>>({});
@@ -191,10 +226,17 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
             setEditingItemId(null);
         };
 
-        const handleDelete = async (id: string) => {
-            if (window.confirm('Anda yakin ingin menghapus item ini?')) {
-                await deleteItem(id);
+        const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+        const confirmDelete = async () => {
+            if (itemToDelete) {
+                await deleteItem(itemToDelete);
+                setItemToDelete(null);
             }
+        };
+
+        const handleDelete = (id: string) => {
+            setItemToDelete(id);
         };
 
         const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,6 +292,13 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
 
         return (
             <div className="space-y-4">
+                <ConfirmModal
+                    isOpen={!!itemToDelete}
+                    title={`Hapus ${title}`}
+                    message={`Anda yakin ingin menghapus item ini?`}
+                    onConfirm={confirmDelete}
+                    onCancel={() => setItemToDelete(null)}
+                />
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
                     <h3 className="text-lg md:text-xl font-semibold text-gray-700">{editingItemId ? `Edit ${title}` : title}</h3>
                     {canEdit && (
