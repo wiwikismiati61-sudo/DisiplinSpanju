@@ -214,6 +214,61 @@ const Reports: React.FC<ReportsProps> = ({ showModal }) => {
             });
     };
 
+    const handleDownloadFollowUpPivot = () => {
+        const dataToExport = getFollowUpPivotData();
+        exportToExcel(dataToExport, 'Laporan_Tindak_Lanjut_Pivot');
+    };
+
+    const handlePreviewFollowUpPivot = () => {
+        const data = getFollowUpPivotData();
+        showPreviewModal("Preview: Laporan Tindak Lanjut (Pivot)", data);
+    };
+
+    const getFollowUpPivotData = () => {
+        const pivotMap: Record<string, any> = {};
+
+        transactions.forEach(t => {
+            const student = students.find(s => s.id === t.studentId);
+            const violation = violations.find(v => v.id === t.violationId);
+            const followUp = followUps.find(f => f.id === t.followUpId);
+
+            const className = student?.class || 'N/A';
+            const studentName = student?.name || 'N/A';
+            const violationName = violation?.name || 'N/A';
+            const followUpName = followUp?.description || 'N/A';
+
+            const key = `${className}-${studentName}-${violationName}-${followUpName}`;
+
+            if (!pivotMap[key]) {
+                pivotMap[key] = {
+                    'Kelas': className,
+                    'Nama Siswa': studentName,
+                    'Jenis Pelanggaran': violationName,
+                    'Tindak Lanjut': followUpName,
+                    'Jumlah Total': 0,
+                    'Jumlah Total Home Visit': 0
+                };
+            }
+            
+            pivotMap[key]['Jumlah Total'] += 1;
+            if (followUpName.toLowerCase().includes('home visit')) {
+                pivotMap[key]['Jumlah Total Home Visit'] += 1;
+            }
+        });
+
+        return Object.values(pivotMap).sort((a: any, b: any) => {
+            if (a['Kelas'] !== b['Kelas']) return a['Kelas'].localeCompare(b['Kelas']);
+            return a['Nama Siswa'].localeCompare(b['Nama Siswa']);
+        }).map((item: any) => ({
+            'Kelas': item['Kelas'],
+            'Nama Siswa': item['Nama Siswa'],
+            'Jenis Pelanggaran': item['Jenis Pelanggaran'],
+            'Tindak Lanjut': item['Tindak Lanjut'],
+            'Jumlah Total': item['Jumlah Total'],
+            'Jumlah Total Home Visit': item['Jumlah Total Home Visit']
+        }));
+    };
+
     const showPreviewModal = (title: string, data: any[]) => {
         if (data.length === 0) {
             showModal(title, <div className="p-4 text-center text-gray-500">Tidak ada data untuk ditampilkan.</div>);
@@ -422,6 +477,12 @@ const Reports: React.FC<ReportsProps> = ({ showModal }) => {
                     description="Laporan yang berfokus pada tindak lanjut yang diberikan untuk setiap pelanggaran."
                     onDownload={handleDownloadFollowUp}
                     onPreview={handlePreviewFollowUp}
+                />
+                <ReportCard 
+                    title="Laporan Tindak Lanjut (Pivot)"
+                    description="Laporan model pivot dengan nama Kelas, Nama Siswa, Jenis pelanggaran, Tindak lanjut, dan Jumlah Total Home Visit."
+                    onDownload={handleDownloadFollowUpPivot}
+                    onPreview={handlePreviewFollowUpPivot}
                 />
                 <ReportCard 
                     title="Siswa yang Perlu Perhatian Khusus"
