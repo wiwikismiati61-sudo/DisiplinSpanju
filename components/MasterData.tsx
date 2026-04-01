@@ -142,12 +142,25 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
         dataType: string
     }) => {
         const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+        const [isAdding, setIsAdding] = useState(false);
+        const [newName, setNewName] = useState('');
 
         const confirmDelete = async () => {
             if (itemToDelete) {
                 await deleteItem(itemToDelete);
                 setItemToDelete(null);
             }
+        };
+
+        const handleAddSubmit = async () => {
+            if (!newName.trim()) {
+                alert('Nama harus diisi');
+                return;
+            }
+            const id = `${idPrefix}-${Date.now()}`;
+            await setItem(id, { id, name: newName });
+            setNewName('');
+            setIsAdding(false);
         };
 
         return (
@@ -160,14 +173,35 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
                 onCancel={() => setItemToDelete(null)}
             />
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
-                <h3 className="text-lg md:text-xl font-semibold text-gray-700">{title}</h3>
+                <h3 className="text-lg md:text-xl font-semibold text-gray-700">{isAdding ? `Tambah ${title}` : title}</h3>
                 {canEdit && (
-                    <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
-                        <UploadCloud size={18} className="mr-2" /> Upload dari Excel
-                    </button>
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                        <button onClick={() => { setIsAdding(true); setNewName(''); }} className="w-full sm:w-auto flex justify-center items-center bg-blue-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-blue-600 transition">
+                            <Plus size={18} className="mr-2" /> Tambah Manual
+                        </button>
+                        <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
+                            <UploadCloud size={18} className="mr-2" /> Upload dari Excel
+                        </button>
+                    </div>
                 )}
                 <input type="file" ref={fileInputRef} onChange={(e) => onFileUpload(e, data, setItem, idPrefix, dataType)} className="hidden" accept=".xlsx, .xls" />
             </div>
+            {isAdding && canEdit && (
+                <div className="flex flex-col sm:flex-row gap-4 items-end bg-gray-50 p-4 rounded-lg">
+                    <div className="flex-1 w-full">
+                        <label className="block text-xs md:text-sm font-medium text-gray-700">Nama</label>
+                        <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 text-sm md:text-base"/>
+                    </div>
+                    <div className="flex items-center space-x-2 w-full sm:w-auto">
+                        <button onClick={() => setIsAdding(false)} className="flex-1 sm:flex-none bg-gray-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-gray-600 transition h-10">
+                            Batal
+                        </button>
+                        <button onClick={handleAddSubmit} className="flex-1 sm:flex-none flex justify-center items-center bg-brand-primary text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-brand-dark transition h-10">
+                            <Save size={16} className="mr-2" /> Simpan
+                        </button>
+                    </div>
+                </div>
+            )}
              <div className="overflow-auto max-h-[60vh] rounded-lg border">
                 <table className="w-full text-left whitespace-nowrap">
                     <thead className="bg-gray-100 sticky top-0"><tr><th className="p-2 md:p-3 text-sm font-medium text-gray-600">Nama</th>{canDelete && <th className="p-2 md:p-3 text-sm font-medium text-gray-600 w-24">Aksi</th>}</tr></thead>
@@ -192,17 +226,21 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
     const CrudComponent = <T extends {id: string, [key: string]: any}>({ title, data, setItem, deleteItem, formFields }: { title: string, data: T[], setItem: (id: string, item: T) => Promise<void>, deleteItem: (id: string) => Promise<void>, formFields: { name: string, label: string, type: string, options?: string[] }[] }) => {
         const [formState, setFormState] = useState<Partial<T>>({});
         const fileInputRef = useRef<HTMLInputElement>(null);
+        const [isAdding, setIsAdding] = useState(false);
         
         useEffect(() => {
             if (editingItemId) {
                 const itemToEdit = data.find(item => item.id === editingItemId);
                 if (itemToEdit) {
                     setFormState(itemToEdit);
+                    setIsAdding(false);
                 }
             } else {
-                setFormState({});
+                if (!isAdding) {
+                    setFormState({});
+                }
             }
-        }, [editingItemId, data]);
+        }, [editingItemId, data, isAdding]);
 
         const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
             const { name, value, type } = e.target;
@@ -219,11 +257,13 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
             await setItem(id, { ...formState, id } as T);
             setFormState({});
             setEditingItemId(null);
+            setIsAdding(false);
         };
         
         const handleCancelEdit = () => {
             setFormState({});
             setEditingItemId(null);
+            setIsAdding(false);
         };
 
         const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -300,15 +340,20 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
                     onCancel={() => setItemToDelete(null)}
                 />
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-700">{editingItemId ? `Edit ${title}` : title}</h3>
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-700">{editingItemId ? `Edit ${title}` : isAdding ? `Tambah ${title}` : title}</h3>
                     {canEdit && (
-                        <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
-                            <UploadCloud size={18} className="mr-2" /> Upload dari Excel
-                        </button>
+                        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                            <button onClick={() => { setIsAdding(true); setEditingItemId(null); setFormState({}); }} className="w-full sm:w-auto flex justify-center items-center bg-blue-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-blue-600 transition">
+                                <Plus size={18} className="mr-2" /> Tambah Manual
+                            </button>
+                            <button onClick={() => fileInputRef.current?.click()} className="w-full sm:w-auto flex justify-center items-center bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-green-600 transition">
+                                <UploadCloud size={18} className="mr-2" /> Upload dari Excel
+                            </button>
+                        </div>
                     )}
                     <input type="file" ref={fileInputRef} onChange={handleExcelUpload} className="hidden" accept=".xlsx, .xls" />
                 </div>
-                {editingItemId && canEdit && (
+                {(editingItemId || isAdding) && canEdit && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg">
                         {formFields.map(f => (
                             <div key={f.name}>
@@ -328,7 +373,7 @@ const MasterData: React.FC<MasterDataProps> = ({ userRole }) => {
                                 Batal
                             </button>
                             <button onClick={handleSubmit} className="flex-1 sm:flex-none flex justify-center items-center bg-brand-primary text-white px-3 py-2 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-brand-dark transition h-10">
-                                <Save size={16} className="mr-2" /> Update
+                                <Save size={16} className="mr-2" /> {editingItemId ? 'Update' : 'Simpan'}
                             </button>
                         </div>
                     </div>
